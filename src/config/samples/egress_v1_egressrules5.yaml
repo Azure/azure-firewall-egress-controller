@@ -1,0 +1,16 @@
+apiVersion: egress.tutorial.kubebuilder.io/v1
+kind: Egressrules
+metadata:
+  name: egressrules-sample5
+  namespace : default
+spec:
+  podSelector:
+    - app: "voting-app"
+  destinationAddresses: ["*"]
+  destinationPorts: ["*"]
+  protocol : ["UDP","TCP"]
+  action : "Allow"
+  ruleType: "Network"
+
+
+
