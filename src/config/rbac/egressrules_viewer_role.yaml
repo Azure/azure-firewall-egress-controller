@@ -1,0 +1,20 @@
+# permissions for end users to view egressrules.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: egressrules-viewer-role
+rules:
+- apiGroups:
+  - egress.tutorial.kubebuilder.io
+  resources:
+  - egressrules
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - egress.tutorial.kubebuilder.io
+  resources:
+  - egressrules/status
+  verbs:
+  - get

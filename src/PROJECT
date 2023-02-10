@@ -1,0 +1,21 @@
+domain: tutorial.kubebuilder.io
+layout:
+- go.kubebuilder.io/v3
+projectName: aks-egress
+repo: tutorial.kubebuilder.io/aks-egress
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: tutorial.kubebuilder.io
+  group: egress
+  kind: Egressrules
+  path: tutorial.kubebuilder.io/aks-egress/api/v1
+  version: v1
+- controller: true
+  group: core
+  kind: Pods
+  path: k8s.io/api/core/v1
+  version: v1
+version: "3"

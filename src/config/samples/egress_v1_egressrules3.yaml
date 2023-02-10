@@ -1,0 +1,12 @@
+apiVersion: egress.tutorial.kubebuilder.io/v1
+kind: Egressrules
+metadata:
+  name: egressrules-sample3
+  namespace : default
+spec:
+  podSelector:
+    - app: "nginx0"
+  targetFqdns: ["google.com","*.google.com"]
+  protocol : ["HTTP:80"]
+  action : "Allow"
+  ruleType: "Application"
