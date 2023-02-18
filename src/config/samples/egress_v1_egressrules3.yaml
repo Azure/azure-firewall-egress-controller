@@ -4,6 +4,7 @@ metadata:
   name: egressrules-sample3
   namespace : default
 spec:
+  ruleCollectionName: "aks-fw-ng"
   podSelector:
     - app: "nginx0"
   targetFqdns: ["google.com","*.google.com"]

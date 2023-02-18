@@ -4,6 +4,7 @@ metadata:
   name: egressrules-sample5
   namespace : default
 spec:
+  ruleCollectionName: "testing-voting-app"
   podSelector:
     - app: "voting-app"
   destinationAddresses: ["*"]

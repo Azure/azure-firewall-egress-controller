@@ -30,6 +30,7 @@ type EgressrulesSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Foo is an example field of Egressrules. Edit egressrules_types.go to remove/update
+	RuleCollectionName   string                                         `json:"ruleCollectionName,omitempty"`
 	SourceAddress        []string                                       `json:"sourceAddress,omitempty"`
 	NodeSelector         []map[string]string                            `json:"nodeSelector,omitempty"`
 	PodSelector          []map[string]string                            `json:"podSelector,omitempty"`

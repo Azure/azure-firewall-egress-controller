@@ -167,7 +167,7 @@ func (az *azClient) buildFirewallConfig(erulesList egressv1.EgressrulesList, eru
 			} else {
 				for i := 0; i < len(ruleCollections); i++ {
 					ruleCollection := ruleCollections[i].(*n.FirewallPolicyFilterRuleCollection)
-					if az.getRuleCollectionType(erule.Spec.RuleType) == ruleCollection.RuleCollectionType && *az.buildAction(erule.Spec.Action) == *ruleCollection.Action && strings.Contains(*ruleCollection.Name, erule.Spec.RuleType) {
+					if erule.Spec.RuleCollectionName == *ruleCollection.Name {
 						rules := *ruleCollection.Rules
 						rule := az.getRule(erule, erulesSourceAddresses)
 						rules = append(rules, rule)
@@ -184,7 +184,7 @@ func (az *azClient) buildFirewallConfig(erulesList egressv1.EgressrulesList, eru
 func (az *azClient) notFoundRuleCollection(erule egressv1.Egressrules, ruleCollections []n.BasicFirewallPolicyRuleCollection) bool {
 	for i := 0; i < len(ruleCollections); i++ {
 		ruleCollection := ruleCollections[i].(*n.FirewallPolicyFilterRuleCollection)
-		if az.getRuleCollectionType(erule.Spec.RuleType) == ruleCollection.RuleCollectionType && *az.buildAction(erule.Spec.Action) == *ruleCollection.Action && strings.Contains(*ruleCollection.Name, erule.Spec.RuleType) {
+		if erule.Spec.RuleCollectionName == *ruleCollection.Name {
 			return false
 		}
 	}
@@ -208,7 +208,7 @@ func (az *azClient) createRuleCollection(erule egressv1.Egressrules, erulesSourc
 	}
 
 	ruleCollection := &n.FirewallPolicyFilterRuleCollection{
-		Name:               to.StringPtr("Rule" + erule.Spec.RuleType + string(erule.Spec.Action)),
+		Name:               to.StringPtr(erule.Spec.RuleCollectionName),
 		Action:             az.buildAction(erule.Spec.Action),
 		Priority:           &priority,
 		RuleCollectionType: az.getRuleCollectionType(erule.Spec.RuleType),
