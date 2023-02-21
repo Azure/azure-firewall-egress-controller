@@ -1,6 +1,7 @@
 # Azure Firewall Egress Controller
 
 ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/azure/azure-firewall-egress-controller)
+[![Go Report Card](https://goreportcard.com/badge/github.com/Azure/Azure-Firewall-Egress-Controller)](https://goreportcard.com/report/github.com/Azure/Azure-Firewall-Egress-Controller)
 
 Azure Firewall Egress Controller provides stricter policy enforcement at the [Azure Firewall](https://learn.microsoft.com/en-us/azure/firewall/overview) that is application aware in an automated fashion with real time updates as the AKS cluster grows and shrinks. [AKS (Azure Kubernetes Service)](https://learn.microsoft.com/en-us/azure/aks/) workloads are secured using Azure Firewall as the egress firewall.
 
