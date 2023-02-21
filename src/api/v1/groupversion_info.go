@@ -15,8 +15,8 @@ limitations under the License.
 */
 
 // Package v1 contains API Schema definitions for the egress v1 API group
-//+kubebuilder:object:generate=true
-//+groupName=egress.tutorial.kubebuilder.io
+// +kubebuilder:object:generate=true
+// +groupName=egress.tutorial.kubebuilder.io
 package v1
 
 import (

@@ -26,10 +26,7 @@ import (
 
 // EgressrulesSpec defines the desired state of Egressrules
 type EgressrulesSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of Egressrules. Edit egressrules_types.go to remove/update
+	RuleCollectionName   string                                         `json:"ruleCollectionName,omitempty"`
 	SourceAddress        []string                                       `json:"sourceAddress,omitempty"`
 	NodeSelector         []map[string]string                            `json:"nodeSelector,omitempty"`
 	PodSelector          []map[string]string                            `json:"podSelector,omitempty"`

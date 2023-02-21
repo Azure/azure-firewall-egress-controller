@@ -67,11 +67,11 @@ spec:
                 items:
                   type: string
                 type: array
+              ruleCollectionName:
+                type: string
               ruleType:
                 type: string
               sourceAddress:
-                description: Foo is an example field of Egressrules. Edit egressrules_types.go
-                  to remove/update
                 items:
                   type: string
                 type: array
