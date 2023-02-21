@@ -1,4 +1,4 @@
-Azure Firewall Egress Controller
+## Azure Firewall Egress Controller
 
 ## Contributing
 
