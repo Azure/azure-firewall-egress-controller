@@ -2,7 +2,7 @@
 
 Azure Firewall Egress Controller provides stricter policy enforcement at the Firewall that is application aware in an automated fashion with real time updates as the AKS cluster grows and shrinks. AKS (Azure Kubernetes Service) workloads are secured using Azure Firewall as the egress firewall.
 
-![Azure Firewall Egress Controller + AKS](docs/images/architecture.png)
+<img src="docs/images/architecture.png">
 
 ## Contributing
 
