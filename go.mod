@@ -1,4 +1,4 @@
-module tutorial.kubebuilder.io/aks-egress
+module azure-firewall-egress-controller.io/aks-egress
 
 go 1.18
 

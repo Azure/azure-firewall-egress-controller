@@ -8,7 +8,7 @@ webhook:
   port: 9443
 leaderElection:
   leaderElect: true
-  resourceName: 7b2ac79d.tutorial.kubebuilder.io
+  resourceName: 7b2ac79d.azure-firewall-egress-controller.io
 # leaderElectionReleaseOnCancel defines if the leader should step down volume
 # when the Manager ends. This requires the binary to immediately end when the
 # Manager is stopped, otherwise, this setting is unsafe. Setting this significantly

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	//egressv1 "tutorial.kubebuilder.io/aks-egress/api/v1"
+	//egressv1 "azure-firewall-egress-controller.io/aks-egress/api/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 

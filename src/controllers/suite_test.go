@@ -32,7 +32,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
-	egressv1 "tutorial.kubebuilder.io/aks-egress/api/v1"
+	egressv1 "azure-firewall-egress-controller.io/aks-egress/api/v1"
 	//+kubebuilder:scaffold:imports
 )
 

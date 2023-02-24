@@ -1,4 +1,4 @@
-apiVersion: egress.tutorial.kubebuilder.io/v1
+apiVersion: egress.azure-firewall-egress-controller.io/v1
 kind: Egressrules
 metadata:
   name: egressrules-sample3
@@ -7,7 +7,7 @@ spec:
   ruleCollectionName: "aks-fw-ng"
   podSelector:
     - app: "nginx0"
-  targetFqdns: ["google.com","*.google.com"]
+  targetFqdns: ["*.google.com"]
   protocol : ["HTTP:80"]
   action : "Allow"
   ruleType: "Application"

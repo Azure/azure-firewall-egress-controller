@@ -19,6 +19,8 @@ package controllers
 import (
 	"context"
 
+	egressv1 "azure-firewall-egress-controller.io/aks-egress/api/v1"
+	a "azure-firewall-egress-controller.io/aks-egress/azure"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -26,8 +28,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
-	egressv1 "tutorial.kubebuilder.io/aks-egress/api/v1"
-	a "tutorial.kubebuilder.io/aks-egress/azure"
 )
 
 // EgressrulesReconciler reconciles a Egressrules object
@@ -37,9 +37,9 @@ type EgressrulesReconciler struct {
 	AzClient a.AzClient
 }
 
-//+kubebuilder:rbac:groups=egress.tutorial.kubebuilder.io,resources=egressrules,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=egress.tutorial.kubebuilder.io,resources=egressrules/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=egress.tutorial.kubebuilder.io,resources=egressrules/finalizers,verbs=update
+//+kubebuilder:rbac:groups=egress.azure-firewall-egress-controller.io,resources=egressrules,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=egress.azure-firewall-egress-controller.io,resources=egressrules/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=egress.azure-firewall-egress-controller.io,resources=egressrules/finalizers,verbs=update
 //+kubebuilder:rbac:groups=core,resources=pods,verbs=get;watch;list
 //+kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=core,resources=pods/status,verbs=get;watch;create;update;patch;delete

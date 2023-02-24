@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	egressv1 "azure-firewall-egress-controller.io/aks-egress/api/v1"
 	n "github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-03-01/network"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
@@ -13,7 +14,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	egressv1 "tutorial.kubebuilder.io/aks-egress/api/v1"
 )
 
 // AzClient is an interface for client to Azure

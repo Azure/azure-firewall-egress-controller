@@ -13,4 +13,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: navyagantaaksfw.azurecr.io/aks-egress
-  newTag: version3
+  newTag: ver2

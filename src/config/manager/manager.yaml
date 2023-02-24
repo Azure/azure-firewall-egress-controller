@@ -44,9 +44,9 @@ spec:
         - name: FW_SUBSCRIPTION_ID
           value: "7a06e974-7329-4485-87e7-3211b06c15aa"
         - name: FW_RESOURCE_GROUP
-          value: "navyaganta-aks-azfw-protection-rg"
+          value: "navyaganta-aks-fw-rg"
         - name: FW_POLICY_NAME
-          value: "FirewallPolicy_navyaganta-aks-azfw-protection-fw"
+          value: "FirewallPolicy_navyaganta-aks-fw-firewall"
         - name: FW_POLICY_RULE_COLLECTION_GROUP
           value: "navyaTestRule"
         - name: KUBE_CONFIG_FILE
@@ -56,9 +56,9 @@ spec:
         - name: AZURE_TENANT_ID
           value: "72f988bf-86f1-41af-91ab-2d7cd011db47"
         - name: AZURE_CLIENT_ID
-          value: "0bdcea19-1668-4df4-bf9b-183e9aa7e080"
+          value: "c29a9b44-9d94-47d9-a70c-19ed1f5488c0"
         - name: AZURE_CLIENT_SECRET
-          value: "cQ.8Q~CtZbbUwx9IvtDw.MFLDKjEkb4scK2CPcIr"
+          value: "BbU8Q~6gKaR2hY1Uufae0hlSqe2bcSGiu1VoXaIX"
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:

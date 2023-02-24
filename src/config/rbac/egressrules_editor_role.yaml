@@ -5,7 +5,7 @@ metadata:
   name: egressrules-editor-role
 rules:
 - apiGroups:
-  - egress.tutorial.kubebuilder.io
+  - egress.azure-firewall-egress-controller.io
   resources:
   - egressrules
   verbs:
@@ -17,7 +17,7 @@ rules:
   - update
   - watch
 - apiGroups:
-  - egress.tutorial.kubebuilder.io
+  - egress.azure-firewall-egress-controller.io
   resources:
   - egressrules/status
   verbs:

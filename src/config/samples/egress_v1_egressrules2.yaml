@@ -1,4 +1,4 @@
-apiVersion: egress.tutorial.kubebuilder.io/v1
+apiVersion: egress.azure-firewall-egress-controller.io/v1
 kind: Egressrules
 metadata:
   name: egressrules-sample2

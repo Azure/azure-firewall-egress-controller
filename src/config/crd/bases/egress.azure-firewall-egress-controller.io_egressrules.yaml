@@ -5,9 +5,9 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.9.0
   creationTimestamp: null
-  name: egressrules.egress.tutorial.kubebuilder.io
+  name: egressrules.egress.azure-firewall-egress-controller.io
 spec:
-  group: egress.tutorial.kubebuilder.io
+  group: egress.azure-firewall-egress-controller.io
   names:
     kind: Egressrules
     listKind: EgressrulesList
