@@ -56,9 +56,9 @@ spec:
         - name: AZURE_TENANT_ID
           value: "72f988bf-86f1-41af-91ab-2d7cd011db47"
         - name: AZURE_CLIENT_ID
-          value: "c29a9b44-9d94-47d9-a70c-19ed1f5488c0"
+          value: "0000-0000-0000-0000-00000000"
         - name: AZURE_CLIENT_SECRET
-          value: "BbU8Q~6gKaR2hY1Uufae0hlSqe2bcSGiu1VoXaIX"
+          value: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
