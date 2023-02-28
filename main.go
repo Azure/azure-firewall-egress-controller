@@ -32,11 +32,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
+	egressv1 "azure-firewall-egress-controller.io/aks-egress/api/v1"
+	azure "azure-firewall-egress-controller.io/aks-egress/azure"
+	"azure-firewall-egress-controller.io/aks-egress/controllers"
+	environment "azure-firewall-egress-controller.io/aks-egress/environment"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
-	egressv1 "tutorial.kubebuilder.io/aks-egress/api/v1"
-	azure "tutorial.kubebuilder.io/aks-egress/azure"
-	"tutorial.kubebuilder.io/aks-egress/controllers"
-	environment "tutorial.kubebuilder.io/aks-egress/environment"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -75,7 +75,7 @@ func main() {
 		Port:                   9443,
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
-		LeaderElectionID:       "7b2ac79d.tutorial.kubebuilder.io",
+		LeaderElectionID:       "7b2ac79d.azure-firewall-egress-controller.io",
 		// LeaderElectionReleaseOnCancel defines if the leader should step down voluntarily
 		// when the Manager ends. This requires the binary to immediately end when the
 		// Manager is stopped, otherwise, this setting is unsafe. Setting this significantly

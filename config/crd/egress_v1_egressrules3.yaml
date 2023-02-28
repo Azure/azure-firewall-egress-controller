@@ -1,0 +1,12 @@
+apiVersion: egress.azure-firewall-egress-controller.io/v1
+kind: Egressrules
+metadata:
+  name: egressrules-sample3
+  namespace : default
+spec:
+  podSelector:
+    - app: "nginx0"
+  targetFqdns: ["google.com","*.google.com"]
+  protocol : ["HTTP:800"]
+  action : "Allow"
+  ruleType: "Application"

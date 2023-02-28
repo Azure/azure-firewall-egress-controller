@@ -1,17 +1,17 @@
-domain: tutorial.kubebuilder.io
+domain: azure-firewall-egress-controller.io
 layout:
 - go.kubebuilder.io/v3
 projectName: aks-egress
-repo: tutorial.kubebuilder.io/aks-egress
+repo: https://github.com/Azure/Azure-Firewall-Egress-Controller
 resources:
 - api:
     crdVersion: v1
     namespaced: true
   controller: true
-  domain: tutorial.kubebuilder.io
+  domain: azure-firewall-egress-controller.io
   group: egress
   kind: Egressrules
-  path: tutorial.kubebuilder.io/aks-egress/api/v1
+  path: azure-firewall-egress-controller.io/aks-egress/api/v1
   version: v1
 - controller: true
   group: core

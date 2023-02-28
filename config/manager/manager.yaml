@@ -1,0 +1,89 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    control-plane: controller-manager
+  name: system
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: controller-manager
+  namespace: system
+  labels:
+    control-plane: controller-manager
+spec:
+  selector:
+    matchLabels:
+      control-plane: controller-manager
+  replicas: 1
+  template:
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/default-container: manager
+      labels:
+        control-plane: controller-manager
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        # TODO(user): For common cases that do not require escalating privileges
+        # it is recommended to ensure that all your Pods/Containers are restrictive.
+        # More info: https://kubernetes.io/docs/concepts/security/pod-security-standards/#restricted
+        # Please uncomment the following code if your project does NOT have to work on old Kubernetes
+        # versions < 1.19 or on vendors versions which do NOT support this field by default (i.e. Openshift < 4.11 ).
+        # seccompProfile:
+        #   type: RuntimeDefault
+      containers:
+      - command:
+        - /manager
+        args:
+        - --leader-elect
+        image: controller:latest
+        name: manager
+        env:
+        - name: FW_SUBSCRIPTION_ID
+          value: "7a06e974-7329-4485-87e7-3211b06c15aa"
+        - name: FW_RESOURCE_GROUP
+          value: "navyaganta-aks-fw-rg"
+        - name: FW_POLICY_NAME
+          value: "FirewallPolicy_navyaganta-aks-fw-firewall"
+        - name: FW_POLICY_RULE_COLLECTION_GROUP
+          value: "navyaTestRule"
+        - name: KUBE_CONFIG_FILE
+          value: "$HOME/.kube/config"
+        - name: AZURE_AUTH_LOCATION
+          value: "$HOME/.azure/azureAuth.json"
+        - name: AZURE_TENANT_ID
+          value: "72f988bf-86f1-41af-91ab-2d7cd011db47"
+        - name: AZURE_CLIENT_ID
+          value: "0000-0000-0000-0000-00000000"
+        - name: AZURE_CLIENT_SECRET
+          value: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - "ALL"
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8081
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        # TODO(user): Configure the resources accordingly based on the project requirements.
+        # More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+        resources:
+          limits:
+            cpu: 500m
+            memory: 128Mi
+          requests:
+            cpu: 10m
+            memory: 64Mi
+      serviceAccountName: controller-manager
+      terminationGracePeriodSeconds: 10

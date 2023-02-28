@@ -1,0 +1,14 @@
+apiVersion: egress.azure-firewall-egress-controller.io/v1
+kind: Egressrules
+metadata:
+  name: egressrules-sample6
+  namespace : default
+spec:
+  # TODO(user): Add fields here
+  podSelector:
+    - app: "voting-app"
+  destinationAddresses: ["*"]
+  destinationPorts: ["*"]
+  protocol : ["UDP"]
+  action : "Allow"
+  ruleType: "Network"
