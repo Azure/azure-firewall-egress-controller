@@ -47,11 +47,9 @@ spec:
           requests:
             cpu: 5m
             memory: 64Mi
-      - name: {{ .Chart.Name }}
+      - name: manager
         image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
         imagePullPolicy: {{ .Values.image.pullPolicy }}
-        #image: navyafwacr.azurecr.io/aks-egress:version4
-        #name: manager
         args:
         - "--health-probe-bind-address=:8081"
         - "--metrics-bind-address=127.0.0.1:8080"
