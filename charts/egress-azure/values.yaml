@@ -5,7 +5,7 @@
 replicaCount: 1
 
 image:
-  repository: navyafwacr.azurecr.io/aks-egress
+  repository: afecacr.azurecr.io/aks-egress
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
   tag: 1.0.0

@@ -1,7 +1,7 @@
 # Build the manager binary
 FROM golang:1.18 as builder
 
-ENV DOCKER_REGISTRY navyafwacr.azurecr.io
+ENV DOCKER_REGISTRY afecacr.azurecr.io
 WORKDIR /workspace
 # Copy the Go Modules manifests
 COPY go.mod go.mod
@@ -17,7 +17,7 @@ RUN ls
 COPY main.go main.go
 COPY api/ api/
 COPY controllers/ controllers/
-COPY helm/ helm/
+COPY charts/ charts/
 
 # Build
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o manager main.go
