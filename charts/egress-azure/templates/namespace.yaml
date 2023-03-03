@@ -1,0 +1,6 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    control-plane: aks-egress-controller-manager
+  name: aks-egress-system

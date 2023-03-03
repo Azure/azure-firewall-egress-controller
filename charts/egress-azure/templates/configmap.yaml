@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aks-egress-controller-config-map
+  namespace: aks-egress-system
+  labels:
+    control-plane: aks-egress-controller-manager
+    app: egress-azure
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+data:
+  FW_RESOURCE_GROUP: {{ .Values.fw.fwResourceGroup | quote }}
+  FW_SUBSCRIPTION_ID: {{ .Values.fw.subscriptionId | quote}}
+  FW_POLICY_NAME: {{ .Values.fw.policyName | quote }}
+  FW_POLICY_RULE_COLLECTION_GROUP: {{ .Values.fw.policyRuleCollectionGroup | quote }}
+  AZURE_TENANT_ID: {{ .Values.auth.tenantId | quote }}
+  AZURE_CLIENT_ID: {{ .Values.auth.clientId | quote }}
+  AZURE_CLIENT_SECRET: {{ .Values.auth.clientSecret | quote }}
