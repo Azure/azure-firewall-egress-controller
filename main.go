@@ -109,6 +109,10 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Egressrules")
 		os.Exit(1)
 	}
+	if err = (&egressv1.Egressrules{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "Egressrules")
+		os.Exit(1)
+	}
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {

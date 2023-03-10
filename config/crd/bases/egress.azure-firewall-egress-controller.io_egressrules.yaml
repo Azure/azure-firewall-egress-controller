@@ -83,6 +83,11 @@ spec:
                 items:
                   type: string
                 type: array
+            required:
+            - action
+            - nodeSelector
+            - protocol
+            - ruleType
             type: object
           status:
             description: EgressrulesStatus defines the observed state of Egressrules
