@@ -1,4 +1,4 @@
-// -------------------------------------------------------------------------------------------
+//
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 // --------------------------------------------------------------------------------------------
@@ -13,6 +13,8 @@ import (
 	"math/rand"
 	"strings"
 	"time"
+
+	"k8s.io/klog/v2"
 )
 
 func init() {
