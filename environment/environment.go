@@ -56,7 +56,7 @@ func GetEnv() EnvVariables {
 		ResourceGroupName:               os.Getenv(ResourceGroupNameVarName),
 		FwPolicyName:                    os.Getenv(fwPolicyVarName),
 		FwPolicyRuleCollectionGroupName: os.Getenv(fwPolicyRuleCollectionGroupvarName),
-		FwPolicyResourceID:			  	 os.Getenv(fwPolicyResourceID),
+		FwPolicyResourceID:			  	 os.Getenv(fwPolicyResourceID)
 	}
 
 	return env
