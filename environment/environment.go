@@ -26,7 +26,7 @@ const (
 	// The name of your Firewall policy Rule Collection Group
 	fwPolicyRuleCollectionGroupvarName = "FW_POLICY_RULE_COLLECTION_GROUP"
 
-	// ResourceGroupNameVarName is the name of the FW_POLICY_RESOURCE_GROUP
+	// fwPolicyResourceID is the name of the FW_POLICY_RESOURCE_ID
 	fwPolicyResourceID = "FW_POLICY_RESOURCE_ID"
 )
 
