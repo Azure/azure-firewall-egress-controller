@@ -59,6 +59,7 @@ helm install [RELEASE_NAME] azure-firewall-egress-controller/egress-azure \
          --set auth.clientSecret=<azureClientSecret>
 ```
 `<azureTenantId>` and `<azureClientId>` and `<azureClientSecret>` are values that were created in the previous section.
+If a Firewall Policy Resource Id is provided, individual fields of fwpolicySubscriptionId, fwpolicyResourceGroup and fwPolicyName will be ignored
 
 #### Parameters
 - `<fwpolicyResourceId>` : ID of the Firewall Policy.
