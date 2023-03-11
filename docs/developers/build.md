@@ -22,12 +22,12 @@ these APIs.
 
 
 ### Using a Service Principal
-AFEC access to ARM can be possible by creating service principal. Follow the steps below to create an Azure Active Directory (AAD) service principal object. 
+AFEC access to ARM can be possible by creating service principal. Follow the steps below to create an Azure Active Directory (AAD) service principal object.
 
-  1. Create an Active Directory Service Principal and make sure the created service principal has contributor access to the Azure Firewall. 
+  1. Create an Active Directory Service Principal and make sure the created service principal has contributor access to the Azure Firewall.
 
   ```bash
-  az ad sp create-for-rbac --role Contributor --scopes /subscriptions/fwSubscriptionID
+  az ad sp create-for-rbac --role Contributor --scopes /subscriptions/policysubscriptionId
   ```
 
   Please record the appId (`<azureClientId>`), password(`<azureClientSecret>`), and tenant(`<azureTenantId>`) values - these will be used in the following steps to authenticate to azure.
@@ -49,10 +49,11 @@ helm repo update
 ```console
 helm install [RELEASE_NAME] azure-firewall-egress-controller/egress-azure \
          --debug \
-         --set fw.fwResourceGroup=<fwResourceGroup> \
-         --set fw.subscriptionId=<fwSubscriptionId> \
-         --set fw.policyName=<azureFirewallPolicy> \
-         --set fw.policyRuleCollectionGroup=<azureFirewallRuleCollectionGroup> \
+         --set fw.policyResourceId=<fwpolicyResourceId> \
+         --set fw.policyResourceGroup=<fwpolicyResourceGroup> \
+         --set fw.policysubscriptionId=<fwpolicySubscriptionId> \
+         --set fw.policyName=<fwPolicyName> \
+         --set fw.policyRuleCollectionGroup=<fwPolicyRuleCollectionGroup> \
          --set auth.tenantId=<azureTenantId> \
          --set auth.clientId=<azureClientId> \
          --set auth.clientSecret=<azureClientSecret>
@@ -60,10 +61,11 @@ helm install [RELEASE_NAME] azure-firewall-egress-controller/egress-azure \
 `<azureTenantId>` and `<azureClientId>` and `<azureClientSecret>` are values that were created in the previous section.
 
 #### Parameters
-- `<fwResourceGroup>` : Name of the Azure Resource group in which Azure Firewall was created.
-- `<fwSubscriptionId>` : The Azure Subscription ID in which Azure Firewall resides. Example: `a123b234-a3b4-557d-b2df-a0bc12de1234`
-- `<azureFirewallPolicy>` : Name of the Azure firewall policy that is attached to the firewall.
-- `<azureFirewallRuleCollectionGroup>` : The Rule Collection Group dedicated to the Egress Controller.
+- `<fwpolicyResourceId>` : ID of the Firewall Policy.
+- `<fwpolicyResourceGroup>` : Name of the Azure Resource group in which Azure Firewall Policy was created.
+- `<fwpolicySubscriptionId>` : The Azure Subscription ID in which Azure Firewall Policy resides. Example: `a123b234-a3b4-557d-b2df-a0bc12de1234`
+- `<fwPolicyName>` : Name of the Azure Firewall Policy that is attached to the firewall.
+- `<fwPolicyRuleCollectionGroup>` : The Rule Collection Group in the Firewall Policy dedicated to the Egress Controller.
 - `<azureTenantId>` : The tenant ID of the Identity.
 - `<azureClientId>` : The client ID of the Identity.
 - `<azureClientSecret>` : The client Secret of the Identity.
@@ -75,10 +77,11 @@ helm install [RELEASE_NAME] azure-firewall-egress-controller/egress-azure \
 ```console
 helm upgrade [RELEASE_NAME] azure-firewall-egress-controller/egress-azure \
          --debug \
-         --set fw.fwResourceGroup=<fwresourceGroup> \
-         --set fw.subscriptionId=<fwSubscriptionId> \
-         --set fw.policyName=<azureFirewallPolicy> \
-         --set fw.policyRuleCollectionGroup=<azureFirewallRuleCollectiongroup> \
+         --set fw.policyResourceId=<fwpolicyResourceId> \
+         --set fw.policyResourceGroup=<fwpolicyResourceGroup> \
+         --set fw.policysubscriptionId=<fwpolicySubscriptionId> \
+         --set fw.policyName=<fwPolicyName> \
+         --set fw.policyRuleCollectionGroup=<fwPolicyRuleCollectionGroup> \
          --set auth.tenantId=<azureTenantId> \
          --set auth.clientId=<azureClientId> \
          --set auth.clientSecret=<azureClientSecret>
