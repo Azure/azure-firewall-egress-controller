@@ -16,9 +16,7 @@ helm install [RELEASE_NAME] azure-firewall-egress-controller/egress-azure \
          --set fw.subscriptionId=<subscriptionId> \
          --set fw.policyName=<azureFirewallPolicy> \
          --set fw.policyRuleCollectionGroup=<azureFirewallRuleCollectiongroup> \
-         --set auth.tenantId=<azureTenantId> \
          --set auth.clientId=<azureClientId> \
-         --set auth.clientSecret=<azureClientSecret>
 ```
 
 3. To upgrade the chart:
@@ -30,9 +28,7 @@ helm upgrade [RELEASE_NAME] azure-firewall-egress-controller/egress-azure \
          --set fw.subscriptionId=<subscriptionId> \
          --set fw.policyName=<azureFirewallPolicy> \
          --set fw.policyRuleCollectionGroup=<azureFirewallRuleCollectiongroup> \
-         --set auth.tenantId=<azureTenantId> \
          --set auth.clientId=<azureClientId> \
-         --set auth.clientSecret=<azureClientSecret>
 ```
 
 4. Check the log of the newly created pod to verify if it started properly.

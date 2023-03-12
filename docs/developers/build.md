@@ -30,7 +30,7 @@ AFEC access to ARM can be possible by creating service principal. Follow the ste
   az ad sp create-for-rbac --role Contributor --scopes /subscriptions/policysubscriptionId
   ```
 
-  Please record the appId (`<azureClientId>`), password(`<azureClientSecret>`), and tenant(`<azureTenantId>`) values - these will be used in the following steps to authenticate to azure.
+  Please record the appId (`<azureClientId>`) values - this will be used in the following steps to authenticate to azure.
 
 ## Install Azure Firewall Egress Controller as a Helm Chart
 [Helm](https://docs.microsoft.com/en-us/azure/aks/kubernetes-helm) is a package manager for
@@ -54,11 +54,9 @@ helm install [RELEASE_NAME] azure-firewall-egress-controller/egress-azure \
          --set fw.policysubscriptionId=<fwpolicySubscriptionId> \
          --set fw.policyName=<fwPolicyName> \
          --set fw.policyRuleCollectionGroup=<fwPolicyRuleCollectionGroup> \
-         --set auth.tenantId=<azureTenantId> \
          --set auth.clientId=<azureClientId> \
-         --set auth.clientSecret=<azureClientSecret>
 ```
-`<azureTenantId>` and `<azureClientId>` and `<azureClientSecret>` are values that were created in the previous section.
+`<azureClientId>` is the value that was created in the previous section.
 If a Firewall Policy Resource Id is provided, individual fields of fwpolicySubscriptionId, fwpolicyResourceGroup and fwPolicyName will be ignored
 
 #### Parameters
@@ -67,9 +65,7 @@ If a Firewall Policy Resource Id is provided, individual fields of fwpolicySubsc
 - `<fwpolicySubscriptionId>` : The Azure Subscription ID in which Azure Firewall Policy resides. Example: `a123b234-a3b4-557d-b2df-a0bc12de1234`
 - `<fwPolicyName>` : Name of the Azure Firewall Policy that is attached to the firewall.
 - `<fwPolicyRuleCollectionGroup>` : The Rule Collection Group in the Firewall Policy dedicated to the Egress Controller.
-- `<azureTenantId>` : The tenant ID of the Identity.
 - `<azureClientId>` : The client ID of the Identity.
-- `<azureClientSecret>` : The client Secret of the Identity.
 
 
 
@@ -83,9 +79,7 @@ helm upgrade [RELEASE_NAME] azure-firewall-egress-controller/egress-azure \
          --set fw.policysubscriptionId=<fwpolicySubscriptionId> \
          --set fw.policyName=<fwPolicyName> \
          --set fw.policyRuleCollectionGroup=<fwPolicyRuleCollectionGroup> \
-         --set auth.tenantId=<azureTenantId> \
          --set auth.clientId=<azureClientId> \
-         --set auth.clientSecret=<azureClientSecret>
 ```
 
 4. Check the log of the newly created pod to verify if it started properly.
