@@ -11,7 +11,7 @@ resources:
   domain: azure-firewall-egress-controller.io
   group: egress
   kind: Egressrules
-  path: azure-firewall-egress-controller.io/aks-egress/api/v1
+  path: azure-firewall-egress-controller.io/aks-egress/pkg/api/v1
   version: v1
 - controller: true
   group: core

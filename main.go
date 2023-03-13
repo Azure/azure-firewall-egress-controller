@@ -32,10 +32,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	egressv1 "azure-firewall-egress-controller.io/aks-egress/api/v1"
-	azure "azure-firewall-egress-controller.io/aks-egress/azure"
-	"azure-firewall-egress-controller.io/aks-egress/controllers"
-	environment "azure-firewall-egress-controller.io/aks-egress/environment"
+	egressv1 "azure-firewall-egress-controller.io/aks-egress/pkg/api/v1"
+	azure "azure-firewall-egress-controller.io/aks-egress/pkg/azure"
+	"azure-firewall-egress-controller.io/aks-egress/pkg/controllers"
+	environment "azure-firewall-egress-controller.io/aks-egress/pkg/environment"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	//+kubebuilder:scaffold:imports
 )
