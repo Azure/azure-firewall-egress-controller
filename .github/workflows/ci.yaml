@@ -4,6 +4,11 @@ on:
     branches:
       - master 
       - main
+    paths:
+      - ".github/workflows/chart.yaml"
+      - "charts/**"
+      - "docs/**"
+      
 permissions:
   contents: write
 jobs:
