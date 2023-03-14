@@ -33,7 +33,7 @@ AFEC access to ARM can be possible by creating service principal. Follow the ste
   Please record the appId (`<azureClientId>`), password(`<azureClientSecret>`), and tenant(`<azureTenantId>`) values - these will be used in the following steps to authenticate to azure.
 
 ## Install Azure Firewall Egress Controller as a Helm Chart
-[Helm](https://docs.microsoft.com/en-us/azure/aks/kubernetes-helm) is a package manager for the
+[Helm](https://docs.microsoft.com/en-us/azure/aks/kubernetes-helm) is a package manager for
 Kubernetes. We will leverage it to install the `azure-firewall-egress-controller` package.
 Use [Cloud Shell](https://shell.azure.com/) to install install the AFEC Helm package:
 
@@ -70,6 +70,7 @@ If a Firewall Policy Resource Id is provided, individual fields of fwpolicySubsc
 - `<azureTenantId>` : The tenant ID of the Identity.
 - `<azureClientId>` : The client ID of the Identity.
 - `<azureClientSecret>` : The client Secret of the Identity.
+
 
 3. To upgrade the chart
 
