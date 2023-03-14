@@ -23,20 +23,12 @@ jobs:
         with:
           key: ${{ github.ref }}
           path: .cache
-      - run: pip install mkdocs-material 
-      - run: pip install mkdocs-awesome-pages-plugin
-      - run: mkdocs gh-deploy --force
-  deploy-helm:
-    runs-on: ubuntu-20.04
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: true
-          fetch-depth: 0
-      - name: Publish Helm chart
-        uses: stefanprodan/helm-gh-pages@v1.7.0
+      - uses: stefanprodan/helm-gh-pages@v1.7.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           charts_dir: charts
           target_dir: charts
           linting: off
+      - run: pip install mkdocs-material 
+      - run: pip install mkdocs-awesome-pages-plugin
+      - run: mkdocs gh-deploy --force
