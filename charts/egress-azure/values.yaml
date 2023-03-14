@@ -5,10 +5,9 @@
 replicaCount: 1
 
 image:
-  repository: afecacr.azurecr.io/aks-egress
+  repository: mcr.microsoft.com/azure-firewall/azure-firewall-egress-controller
   pullPolicy: Always
-  # Overrides the image tag whose default is the chart appVersion.
-  tag: 1.0.0
+  tag: "031320231"
 
 imagePullSecrets: []
 nameOverride: ""
