@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 
-	egressv1 "azure-firewall-egress-controller.io/aks-egress/pkg/api/v1"
+	egressv1 "github.com/Azure/Azure-Firewall-Egress-Controller/pkg/api/v1"
 	n "github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-03-01/network"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
