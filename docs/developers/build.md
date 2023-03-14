@@ -20,7 +20,6 @@ This documents assumes you already have the following tools and infrastructure i
 AFEC communicates with the Kubernetes API server and the Azure Resource Manager. It requires an identity to access
 these APIs.
 
-
 ### Using a Service Principal
 AFEC access to ARM can be possible by creating service principal. Follow the steps below to create an Azure Active Directory (AAD) service principal object.
 
