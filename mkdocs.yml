@@ -2,6 +2,10 @@ site_name: Azure Firewall Egress Controller
 repo_name: "Azure/azure-firewall-egress-controller"
 repo_url: "https://github.com/Azure/azure-firewall-egress-controller"
 
+nav:
+    - 'index.md'
+    - 'about.md'
+
 theme:
   name: readthedocs
   highlightjs: true

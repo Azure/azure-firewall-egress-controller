@@ -1,4 +1,4 @@
-/* div.col-md-9 h1:first-of-type {
+div.col-md-9 h1:first-of-type {
     text-align: center;
     font-size: 60px;
     font-weight: 300;
@@ -22,7 +22,7 @@ code.no-highlight {
 
 /* Definition List styles */
 
-/* dd {
+dd {
     padding-left: 20px;
 }
 
@@ -32,4 +32,4 @@ li.toctree-l2:first-child {
 
 li.toctree-l3:first-child {
     display: none;
-} */ 
+}
