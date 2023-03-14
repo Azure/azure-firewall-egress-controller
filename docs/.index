@@ -1,0 +1,8 @@
+title: Page Title
+collapse: true
+arrange:
+    - index.md
+    - tutorials
+    - examples
+    - developers
+theme: readthedocs
