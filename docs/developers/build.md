@@ -71,7 +71,6 @@ If a Firewall Policy Resource Id is provided, individual fields of fwpolicySubsc
 - `<azureClientId>` : The client ID of the Identity.
 - `<azureClientSecret>` : The client Secret of the Identity.
 
-
 3. To upgrade the chart
 
 ```console
