@@ -19,8 +19,8 @@ package controllers
 import (
 	"context"
 
-	egressv1 "github.com/Azure/Azure-Firewall-Egress-Controller/pkg/api/v1"
-	a "github.com/Azure/Azure-Firewall-Egress-Controller/pkg/azure"
+	egressv1 "github.com/Azure/azure-firewall-egress-controller/pkg/api/v1"
+	a "github.com/Azure/azure-firewall-egress-controller/pkg/azure"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"

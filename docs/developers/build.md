@@ -22,9 +22,9 @@ these APIs.
 
 
 ### Using a Service Principal
-AFEC access to ARM can be possible by creating service principal. Follow the steps below to create an Azure Active Directory (AAD) service principal object. 
+AFEC access to ARM can be possible by creating service principal. Follow the steps below to create an Azure Active Directory (AAD) service principal object.
 
-  1. Create an Active Directory Service Principal and make sure the created service principal has contributor access to the Azure Firewall. 
+  1. Create an Active Directory Service Principal and make sure the created service principal has contributor access to the Azure Firewall.
 
   ```bash
   az ad sp create-for-rbac --role Contributor --scopes /subscriptions/fwSubscriptionID
@@ -40,7 +40,7 @@ Use [Cloud Shell](https://shell.azure.com/) to install install the AFEC Helm pac
 1. Add the `azure-firewall-egress-controller` helm repo and perform a helm update
 
 ```console
-helm repo add azure-firewall-egress-controller https://azure.github.io/Azure-Firewall-Egress-Controller/charts
+helm repo add azure-firewall-egress-controller https://azure.github.io/azure-firewall-egress-controller/charts
 helm repo update
 ```
 

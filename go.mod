@@ -1,4 +1,4 @@
-module github.com/Azure/Azure-Firewall-Egress-Controller
+module github.com/Azure/azure-firewall-egress-controller
 
 go 1.18
 
