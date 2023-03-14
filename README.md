@@ -5,7 +5,7 @@
 
 Azure Firewall Egress Controller provides stricter policy enforcement at the [Azure Firewall](https://learn.microsoft.com/en-us/azure/firewall/overview) that is application aware in an automated fashion with real time updates as the AKS cluster grows and shrinks. [AKS (Azure Kubernetes Service)](https://learn.microsoft.com/en-us/azure/aks/) workloads are secured using Azure Firewall as the egress firewall.
 
-The Ingress Controller runs in its own pod on the customer’s AKS. AFEC monitors a subset of Kubernetes Resources for changes. The state of the AKS cluster is translated to Azure Firewall specific configuration and applied to the [Azure Resource Manager (ARM)](https://docs.microsoft.com/en-us/azure/azure-resource-manager/resource-group-overview).
+The Egress Controller runs in its own pod on the customer’s AKS. AFEC monitors a subset of Kubernetes Resources for changes. The state of the AKS cluster is translated to Azure Firewall specific configuration and applied to the [Azure Resource Manager (ARM)](https://docs.microsoft.com/en-us/azure/azure-resource-manager/resource-group-overview).
 
 Existing [architecture](https://learn.microsoft.com/en-us/azure/aks/limit-egress-traffic) secures the egress traffic for the entire cluster.
 
