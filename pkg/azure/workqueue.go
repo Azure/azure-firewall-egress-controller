@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"time"
 
-	//egressv1 "azure-firewall-egress-controller.io/aks-egress/api/v1"
+	//egressv1 "github.com/Azure/azure-firewall-egress-controller/api/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 

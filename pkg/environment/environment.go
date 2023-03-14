@@ -7,6 +7,8 @@ package environment
 
 import (
 	"os"
+
+	utils "github.com/Azure/azure-firewall-egress-controller/pkg/utils"
 )
 
 const (
@@ -43,20 +45,20 @@ type EnvVariables struct {
 // GetEnv returns values for defined environment variables for Egress Controller.
 func GetEnv() EnvVariables {
 
-	if env.fwPolicyResourceID != "" {
-		subscriptionID, resourceGroupName, firewallPolicyName := azure.ParseResourceID(env.fwPolicyResourceID)
-		env.SubscriptionID = string(subscriptionID)
-		env.ResourceGroupName = string(resourceGroupName)
-		env.FwPolicyName = string(FirewallPolicyName)
-	}
-
 	env := EnvVariables{
 		ClientID:                        os.Getenv(ClientIDVarName),
 		SubscriptionID:                  os.Getenv(SubscriptionIDVarName),
 		ResourceGroupName:               os.Getenv(ResourceGroupNameVarName),
 		FwPolicyName:                    os.Getenv(fwPolicyVarName),
 		FwPolicyRuleCollectionGroupName: os.Getenv(fwPolicyRuleCollectionGroupvarName),
-		FwPolicyResourceID:			  	 os.Getenv(fwPolicyResourceID)
+		FwPolicyResourceID:			  	 os.Getenv(fwPolicyResourceID),
+	}
+
+	if env.FwPolicyResourceID != "" {
+		subscriptionID, resourceGroupName, firewallPolicyName := utils.ParseResourceID(env.FwPolicyResourceID)
+		env.SubscriptionID = string(subscriptionID)
+		env.ResourceGroupName = string(resourceGroupName)
+		env.FwPolicyName = string(firewallPolicyName)
 	}
 
 	return env

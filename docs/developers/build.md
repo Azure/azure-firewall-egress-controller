@@ -40,7 +40,7 @@ Use [Cloud Shell](https://shell.azure.com/) to install install the AFEC Helm pac
 1. Add the `azure-firewall-egress-controller` helm repo and perform a helm update
 
 ```console
-helm repo add azure-firewall-egress-controller https://azure.github.io/Azure-Firewall-Egress-Controller/charts
+helm repo add azure-firewall-egress-controller https://azure.github.io/azure-firewall-egress-controller/charts
 helm repo update
 ```
 

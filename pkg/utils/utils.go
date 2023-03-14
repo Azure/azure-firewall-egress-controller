@@ -13,8 +13,24 @@ import (
 	"math/rand"
 	"strings"
 	"time"
+	"regexp"
 
 	"k8s.io/klog/v2"
+)
+
+type (
+	// SubscriptionID is the subscription of the resource in the resourceID
+	SubscriptionID string
+
+	// ResourceGroup is the resource group in which resource is deployed in the resourceID
+	ResourceGroup string
+
+	// ResourceName is the resource name in the resourceID
+	ResourceName string
+)
+
+var (
+	operationIDRegex = regexp.MustCompile(`/operations/(.+)\?api-version`)
 )
 
 func init() {
@@ -97,3 +113,36 @@ func RemoveDuplicateStrings(list []string) []string {
 
 	return result
 }
+
+// ParseResourceID gets subscriptionId, resource group, resource name from resourceID
+func ParseResourceID(ID string) (SubscriptionID, ResourceGroup, ResourceName) {
+	split := strings.Split(ID, "/")
+	if len(split) < 9 {
+		klog.Errorf("resourceID %s is invalid. There should be atleast 9 segments in resourceID", ID)
+		return "", "", ""
+	}
+
+	return SubscriptionID(split[2]), ResourceGroup(split[4]), ResourceName(split[8])
+}
+
+// ParseSubResourceID gets subscriptionId, resource group, resource name, sub resource name from resourceID
+func ParseSubResourceID(ID string) (SubscriptionID, ResourceGroup, ResourceName, ResourceName) {
+	split := strings.Split(ID, "/")
+	if len(split) < 11 {
+		klog.Errorf("resourceID %s is invalid. There should be atleast 9 segments in resourceID", ID)
+		return "", "", "", ""
+	}
+
+	return SubscriptionID(split[2]), ResourceGroup(split[4]), ResourceName(split[8]), ResourceName(split[10])
+}
+
+// ResourceID generates a resource id
+func ResourceID(subscriptionID SubscriptionID, resourceGroup ResourceGroup, provider string, resourceKind string, resourcePath string) string {
+	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/%s/%s/%s", subscriptionID, resourceGroup, provider, resourceKind, resourcePath)
+}
+
+// ResourceGroupID generates a resource group resource id
+func ResourceGroupID(subscriptionID SubscriptionID, resourceGroup ResourceGroup) string {
+	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s", subscriptionID, resourceGroup)
+}
+
