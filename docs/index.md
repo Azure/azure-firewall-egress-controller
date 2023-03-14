@@ -6,7 +6,7 @@ The Egress Controller runs in its own pod on the customer’s AKS. AFEC monitors
 
 Existing [architecture](https://learn.microsoft.com/en-us/azure/aks/limit-egress-traffic) secures the egress traffic for the entire cluster.
 
-<img src="docs/images/architecture.png" width="750">
+<img src="images/architecture.png" width="750">
 
 ## Contributing
 
