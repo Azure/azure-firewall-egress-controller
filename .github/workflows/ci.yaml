@@ -34,6 +34,8 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: 3.x
+          submodules: true
+          fetch-depth: 0
       - uses: actions/cache@v2
         with:
           key: ${{ github.ref }}
