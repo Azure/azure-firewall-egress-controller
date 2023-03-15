@@ -1,14 +1,15 @@
-name: ci 
+name: ci
 on:
   push:
     branches:
-      - master 
+      - master
       - main
+      - samankal/workflowtest
     paths:
       - ".github/workflows/chart.yaml"
       - "charts/**"
       - "docs/**"
-      
+
 permissions:
   contents: write
 jobs:
@@ -37,6 +38,6 @@ jobs:
         with:
           key: ${{ github.ref }}
           path: .cache
-      - run: pip install mkdocs-material 
+      - run: pip install mkdocs-material
       - run: pip install mkdocs-awesome-pages-plugin
       - run: mkdocs gh-deploy --clean
