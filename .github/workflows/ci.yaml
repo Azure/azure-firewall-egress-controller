@@ -14,30 +14,34 @@ permissions:
   contents: write
 jobs:
   deploy-helm:
-      runs-on: ubuntu-20.04
-      steps:
-        - uses: actions/checkout@v3
-          with:
-            submodules: true
-            fetch-depth: 0
-        - name: Publish Helm chart
-          uses: stefanprodan/helm-gh-pages@v1.7.0
-          with:
-            token: ${{ secrets.GITHUB_TOKEN }}
-            charts_dir: charts
-            target_dir: charts
-            linting: off
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+          fetch-depth: 0
+      - name: Publish Helm chart
+        uses: stefanprodan/helm-gh-pages@v1.7.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          charts_dir: charts
+          target_dir: charts
+          linting: off
   deploy-docs:
-      name: Deploy docs
-      runs-on: ubuntu-latest
-      steps:
-        - uses: actions/checkout@v3
-        - uses: actions/setup-python@v4
-          with:
-            python-version: 3.x
-        - name: Deploy docs
-          uses: mhausenblas/mkdocs-deploy-gh-pages@master
-          with:
-            token: ${{ secrets.GITHUB_TOKEN }}
-        - run: pip install mkdocs-material
-        - run: pip install mkdocs-awesome-pages-plugin
+    name: Deploy docs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.x
+      - uses: actions/cache@v2
+        with:
+          key: ${{ github.ref }}
+          path: .cache
+      - run: pip install mkdocs-awesome-pages-plugin
+      - run: pip install mkdocs-material
+      - name: Deploy docs
+        uses: mhausenblas/mkdocs-deploy-gh-pages@master
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
