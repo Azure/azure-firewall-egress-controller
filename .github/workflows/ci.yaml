@@ -31,12 +31,12 @@ jobs:
       name: Deploy docs
       runs-on: ubuntu-latest
       steps:
-        - run: pip install mkdocs-material
-        - run: pip install mkdocs-awesome-pages-plugin
         - uses: actions/checkout@v3
         - name: Deploy docs
           uses: mhausenblas/mkdocs-deploy-gh-pages@master
           with:
             token: ${{ secrets.GITHUB_TOKEN }}
+        - run: pip install mkdocs-material
+        - run: pip install mkdocs-awesome-pages-plugin
 
       
