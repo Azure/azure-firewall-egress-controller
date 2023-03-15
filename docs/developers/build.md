@@ -1,7 +1,7 @@
 # AFEC Deployment
 
 The Azure Firewall Egress Controller (AFEC) is a pod within your Kubernetes cluster.
-AFEC monitors a subset of Kubernetes Resources and translates them to Azure Firewall specific configuration and applies to the [ARM](https://docs.microsoft.com/en-us/azure/azure-resource-manager/resource-group-overview).
+AFEC monitors a subset of Kubernetes Resources and translates them to Azure Firewall specific configuration and applies to the [Azure Resource Manager (ARM)](https://docs.microsoft.com/en-us/azure/azure-resource-manager/resource-group-overview).
 
 ### Outline:
 - [Prerequisites](#prerequisites)
