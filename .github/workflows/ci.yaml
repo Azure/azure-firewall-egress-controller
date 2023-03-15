@@ -32,6 +32,9 @@ jobs:
       runs-on: ubuntu-latest
       steps:
         - uses: actions/checkout@v3
+        - uses: actions/setup-python@v4
+          with:
+            python-version: 3.x
         - name: Deploy docs
           uses: mhausenblas/mkdocs-deploy-gh-pages@master
           with:
