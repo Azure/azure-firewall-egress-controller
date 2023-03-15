@@ -6,11 +6,7 @@ domain: azure-firewall-egress-controller.io
 layout:
 - go.kubebuilder.io/v3
 projectName: aks-egress
-<<<<<<< HEAD
 repo: https://github.com/Azure/azure-firewall-egress-controller
-=======
-repo: azure-firewall-egress-controller.io/aks-egress
->>>>>>> 3636277 (crds validation initial commit)
 resources:
 - api:
     crdVersion: v1
