@@ -41,3 +41,4 @@ jobs:
           path: .cache
       - run: pip install mkdocs-material
       - run: pip install mkdocs-awesome-pages-plugin
+      - run: pip install gh-deploy --dirty --force
