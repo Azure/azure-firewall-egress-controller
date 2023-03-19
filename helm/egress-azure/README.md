@@ -1,16 +1,9 @@
 # Install Azure Firewall Egress Controller as a Helm Chart
 
-1. Add the `afec-helm` helm repo and perform a helm update
+1. Install Helm chart
 
 ```console
-helm repo add afec-helm oci://mcr.microsoft.com/azfw/helmchart/afec
-helm repo update
-```
-
-2. Install Helm chart `afec-helm`
-
-```console
-helm install [RELEASE_NAME] afec-helm \
+helm install [RELEASE_NAME] oci://mcr.microsoft.com/azfw/helmchart/afec --version [VERSION] \
          --debug \
          --set fw.fwResourceGroup=<resourceGroup> \
          --set fw.subscriptionId=<subscriptionId> \
@@ -21,7 +14,7 @@ helm install [RELEASE_NAME] afec-helm \
          --set auth.clientSecret=<azureClientSecret>
 ```
 
-3. To upgrade the chart:
+2. To upgrade the chart:
 
 ```console
 helm upgrade [RELEASE_NAME] afec-helm \
