@@ -11,11 +11,5 @@ data:
   AZURE_TENANT_ID: {{ .Values.auth.tenantId | quote }}
   AZURE_CLIENT_ID: {{ .Values.auth.clientId | quote }}
   AZURE_CLIENT_SECRET: {{ .Values.auth.clientSecret | quote }}
-{{- if .Values.fw.policyResourceID }}
   FW_POLICY_RESOURCE_ID: {{ .Values.fw.policyResourceID | quote }}
-{{- else }}
-  FW_POLICY_RESOURCE_GROUP: {{ default "" .Values.fw.policyResourceGroup | quote }}
-  FW_POLICY_SUBSCRIPTION_ID: {{ default "" .Values.fw.policySubscriptionId | quote}}
-  FW_POLICY_NAME: {{ default "" .Values.fw.policyName | quote }}
-{{- end -}}
   FW_POLICY_RULE_COLLECTION_GROUP: {{ .Values.fw.policyRuleCollectionGroup | quote }}
