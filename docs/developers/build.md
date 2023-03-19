@@ -46,7 +46,7 @@ helm repo update
 2. Install Helm chart `afec-helm`
 
 ```console
-helm install [RELEASE_NAME] afec-helm \
+helm install [RELEASE_NAME] oci://mcr.microsoft.com/azfw/helmchart/afec --version [VERSION] \
          --debug \
          --set fw.policyResourceId=<fwpolicyResourceId> \
          --set fw.policyResourceGroup=<fwpolicyResourceGroup> \

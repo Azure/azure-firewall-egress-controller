@@ -5,6 +5,7 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.9.0
   creationTimestamp: null
+  namespace: aks-egress-system
   name: egressrules.egress.azure-firewall-egress-controller.io
 spec:
   group: egress.azure-firewall-egress-controller.io

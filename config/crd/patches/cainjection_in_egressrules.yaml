@@ -5,3 +5,4 @@ metadata:
   annotations:
     cert-manager.io/inject-ca-from: $(CERTIFICATE_NAMESPACE)/$(CERTIFICATE_NAME)
   name: egressrules.egress.azure-firewall-egress-controller.io
+  namespace: aks-egress-system
