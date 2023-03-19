@@ -5,9 +5,9 @@
 replicaCount: 1
 
 image:
-  repository: mcr.microsoft.com/azure-firewall/azure-firewall-egress-controller
+  repository: mcr.microsoft.com/azfw/afec
   pullPolicy: Always
-  tag: "031320231"
+  tag: "03182023.1"
 
 imagePullSecrets: []
 nameOverride: ""
