@@ -16,7 +16,7 @@ RUN ls
 # Copy the go source
 COPY main.go main.go
 COPY pkg/ pkg/
-COPY charts/ charts/
+COPY helm/ helm/
 
 # Build
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o manager main.go
