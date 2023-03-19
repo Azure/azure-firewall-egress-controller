@@ -18,4 +18,4 @@ data:
   FW_POLICY_SUBSCRIPTION_ID: {{ default "" .Values.fw.policySubscriptionId | quote}}
   FW_POLICY_NAME: {{ default "" .Values.fw.policyName | quote }}
 {{- end -}}
-    FW_POLICY_RULE_COLLECTION_GROUP: {{ .Values.fw.policyRuleCollectionGroup | quote }}
+  FW_POLICY_RULE_COLLECTION_GROUP: {{ .Values.fw.policyRuleCollectionGroup | quote }}
