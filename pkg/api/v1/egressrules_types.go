@@ -26,18 +26,22 @@ import (
 
 // EgressrulesSpec defines the desired state of Egressrules
 type EgressrulesSpec struct {
-	RuleCollectionName   string                                         `json:"ruleCollectionName,omitempty"`
-	SourceAddress        []string                                       `json:"sourceAddress,omitempty"`
-	NodeSelector         []map[string]string                            `json:"nodeSelector,omitempty"`
-	PodSelector          []map[string]string                            `json:"podSelector,omitempty"`
-	DestinationAddresses []string                                       `json:"destinationAddresses,omitempty"`
-	DestinationPorts     []string                                       `json:"destinationPorts,omitempty"`
-	DestinationFqdns     []string                                       `json:"destinationFqdns,omitempty"`
-	TargetFqdns          []string                                       `json:"targetFqdns,omitempty"`
-	TargetUrls           []string                                       `json:"targetUrls,omitempty"`
-	Protocol             []string                                       `json:"protocol,omitempty"`
-	Action               n.FirewallPolicyFilterRuleCollectionActionType `json:"action,omitempty"`
-	RuleType             string                                         `json:"ruleType,omitempty"`
+	RuleCollectionName string   `json:"ruleCollectionName,omitempty"`
+	SourceAddress      []string `json:"sourceAddress,omitempty"`
+	// +kubebuilder:validation:Required
+	NodeSelector         []map[string]string `json:"nodeSelector"`
+	PodSelector          []map[string]string `json:"podSelector,omitempty"`
+	DestinationAddresses []string            `json:"destinationAddresses,omitempty"`
+	DestinationPorts     []string            `json:"destinationPorts,omitempty"`
+	DestinationFqdns     []string            `json:"destinationFqdns,omitempty"`
+	TargetFqdns          []string            `json:"targetFqdns,omitempty"`
+	TargetUrls           []string            `json:"targetUrls,omitempty"`
+	// +kubebuilder:validation:Required
+	Protocol []string `json:"protocol"`
+	// +kubebuilder:validation:Required
+	Action n.FirewallPolicyFilterRuleCollectionActionType `json:"action"`
+	// +kubebuilder:validation:Required
+	RuleType string `json:"ruleType"`
 }
 
 // EgressrulesStatus defines the observed state of Egressrules

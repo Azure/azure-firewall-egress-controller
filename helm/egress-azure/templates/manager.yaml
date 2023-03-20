@@ -4,22 +4,18 @@ metadata:
   name: aks-egress-controller-manager
   namespace: aks-egress-system
   labels:
-    control-plane: aks-egress-controller-manager
-    app: egress-azure
-    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    control-plane: controller-manager
 spec:
   selector:
     matchLabels:
-      app: egress-azure
-      control-plane: aks-egress-controller-manager
+      control-plane: controller-manager
   replicas: 1
   template:
     metadata:
       annotations:
         kubectl.kubernetes.io/default-container: manager
       labels:
-        app: egress-azure
-        control-plane: aks-egress-controller-manager
+        control-plane: controller-manager
     spec:
       securityContext:
         runAsNonRoot: true
@@ -83,5 +79,18 @@ spec:
           requests:
             cpu: 10m
             memory: 64Mi
+        ports:
+        - containerPort: 9443
+          name: webhook-server
+          protocol: TCP
+        volumeMounts:
+        - mountPath: /tmp/k8s-webhook-server/serving-certs
+          name: cert
+          readOnly: true
+      volumes:
+      - name: cert
+        secret:
+          defaultMode: 420
+          secretName: webhook-server-cert
       serviceAccountName: aks-egress-controller-manager
       terminationGracePeriodSeconds: 10
