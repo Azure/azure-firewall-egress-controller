@@ -39,7 +39,7 @@ type EnvVariables struct {
 	ResourceGroupName               string
 	FwPolicyName                    string
 	FwPolicyRuleCollectionGroupName string
-	FwPolicyResourceID			  	string
+	FwPolicyResourceID              string
 }
 
 // GetEnv returns values for defined environment variables for Egress Controller.
@@ -51,7 +51,7 @@ func GetEnv() EnvVariables {
 		ResourceGroupName:               os.Getenv(ResourceGroupNameVarName),
 		FwPolicyName:                    os.Getenv(fwPolicyVarName),
 		FwPolicyRuleCollectionGroupName: os.Getenv(fwPolicyRuleCollectionGroupvarName),
-		FwPolicyResourceID:			  	 os.Getenv(fwPolicyResourceID),
+		FwPolicyResourceID:              os.Getenv(fwPolicyResourceID),
 	}
 
 	if env.FwPolicyResourceID != "" {

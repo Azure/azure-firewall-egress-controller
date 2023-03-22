@@ -7,7 +7,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -17,6 +16,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/Azure/go-autorest/autorest/to"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -132,7 +132,7 @@ func (az *azClient) getEgressRules(ctx context.Context, req ctrl.Request) (err e
 		erulesSourceAddresses[erule.Name] = sourceAddress
 	}
 
-	fmt.Printf("Erules source addresses %#v\n\n", erulesSourceAddresses)
+	klog.Info("Source Addresses:", erulesSourceAddresses)
 
 	az.BuildPolicy(*erulesList, erulesSourceAddresses)
 	return
@@ -151,13 +151,12 @@ func (az *azClient) BuildPolicy(erulesList egressv1.EgressrulesList, erulesSourc
 	fwRUleCollectionGrp, err1 := az.fwPolicyRuleCollectionGroupClient.CreateOrUpdate(az.ctx, string(az.resourceGroupName), az.fwPolicyName, az.fwPolicyRuleCollectionGroupName, *fwRuleCollectionGrpObj)
 
 	err1 = fwRUleCollectionGrp.WaitForCompletionRef(az.ctx, az.fwPolicyRuleCollectionGroupClient.BaseClient.Client)
-	fmt.Printf("Error in updating the policy.......... : %#v\n\n", err1)
 	if err1 != nil {
+		klog.Error("Error updating the Firewall Policy: ", err1, "\n\n")
 		return
 	}
-	fmt.Printf("Firewall policy updated.....\n")
-	fmt.Printf("------------------------------------\n")
-	fmt.Printf("\n")
+
+	klog.Info("Firewall Policy update successful...\n\n")
 	return
 }
 

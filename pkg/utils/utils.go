@@ -11,9 +11,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/rand"
+	"regexp"
 	"strings"
 	"time"
-	"regexp"
 
 	"k8s.io/klog/v2"
 )
@@ -145,4 +145,3 @@ func ResourceID(subscriptionID SubscriptionID, resourceGroup ResourceGroup, prov
 func ResourceGroupID(subscriptionID SubscriptionID, resourceGroup ResourceGroup) string {
 	return fmt.Sprintf("/subscriptions/%s/resourceGroups/%s", subscriptionID, resourceGroup)
 }
-

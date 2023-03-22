@@ -7,10 +7,10 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	//egressv1 "github.com/Azure/azure-firewall-egress-controller/api/v1"
+	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
@@ -49,7 +49,7 @@ func (q *Queue) AddJob(job Job) {
 }
 
 func (j Job) Run() error {
-	fmt.Printf("Updating policy.......... : %#v\n\n", j.Request)
+	klog.Info("Firewall Policy update event triggered for the reconcile request:", j.Request)
 	j.AzClient.getEgressRules(j.ctx, j.Request)
 	return nil
 }
@@ -65,14 +65,14 @@ func (w *Worker) DoWork() bool {
 	for {
 		select {
 		case <-w.Queue.ctx.Done():
-			fmt.Printf("Context cancelled ... : %#v\n\n", w.Queue.ctx.Err())
+			klog.Error("Context cancelled ... :", w.Queue.ctx.Err())
 			return true
 		// if job received.
 		case job := <-w.Queue.jobs:
 			time.Sleep(5 * time.Second)
 			err := job.Run()
 			if err != nil {
-				fmt.Printf("Err in DoWork ... : %#v\n\n", err)
+				klog.Error("Err in DoWork ... :", err)
 				continue
 			}
 		}
