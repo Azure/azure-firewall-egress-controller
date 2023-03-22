@@ -46,7 +46,6 @@ func (r *Egressrules) ValidateCreate() error {
 	egressruleslog.Info("validate create", "name", r.Name)
 
 	return r.validateFields()
-	return nil
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
@@ -54,7 +53,6 @@ func (r *Egressrules) ValidateUpdate(old runtime.Object) error {
 	egressruleslog.Info("validate update", "name", r.Name)
 
 	return r.validateFields()
-	return nil
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
