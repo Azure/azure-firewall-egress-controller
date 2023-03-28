@@ -5,14 +5,10 @@
 
 package controllers
 
-func checkIfLabelExists(m1 []map[string]string, m2 map[string]string) bool {
-	for _, m := range m1 {
-		for k, v := range m {
-			for k1, v1 := range m2 {
-				if k1 == k && v1 == v {
-					return true
-				}
-			}
+func checkIfLabelExists(k string, v string, m2 map[string]string) bool {
+	for k1, v1 := range m2 {
+		if k1 == k && v1 == v {
+			return true
 		}
 	}
 	return false
@@ -28,4 +24,21 @@ func unique(arr []string) []string {
 		}
 	}
 	return result
+}
+
+func checkIfElementsPresentInArray(arr1 []*string, arr2 []*string) bool {
+	newElementFound := false
+	for _, ele1 := range arr1 {
+		found := false
+		for _, ele2 := range arr2 {
+			if *ele1 == *ele2 {
+				found = true
+				break
+			}
+		}
+		if found == false {
+			newElementFound = true
+		}
+	}
+	return newElementFound
 }
