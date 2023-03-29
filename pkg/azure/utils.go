@@ -5,6 +5,11 @@
 
 package controllers
 
+import (
+	"github.com/Azure/go-autorest/autorest/to"
+	corev1 "k8s.io/api/core/v1"
+)
+
 func checkIfLabelExists(k string, v string, m2 map[string]string) bool {
 	for k1, v1 := range m2 {
 		if k1 == k && v1 == v {
@@ -38,7 +43,30 @@ func checkIfElementsPresentInArray(arr1 []*string, arr2 []*string) bool {
 		}
 		if found == false {
 			newElementFound = true
+			break
 		}
 	}
 	return newElementFound
+}
+
+func getSourceAddressesByPodLabels(k string, v string, podList corev1.PodList) []*string {
+	var sourceAddresses []*string
+	for _, pod := range podList.Items {
+		if pod.ObjectMeta.Namespace != "kube-system" {
+			if pod.Status.Phase == "Running" && checkIfLabelExists(k, v, pod.ObjectMeta.Labels) {
+				sourceAddresses = append(sourceAddresses, to.StringPtr(pod.Status.HostIP))
+			}
+		}
+	}
+	return sourceAddresses
+}
+
+func getSourceAddressesByNodeLabels(k string, v string, nodeList corev1.NodeList) []*string {
+	var sourceAddresses []*string
+	for _, node := range nodeList.Items {
+		if checkIfLabelExists(k, v, node.ObjectMeta.Labels) {
+			sourceAddresses = append(sourceAddresses, to.StringPtr(node.Status.Addresses[0].Address))
+		}
+	}
+	return sourceAddresses
 }
