@@ -7,10 +7,14 @@ package controllers
 
 import (
 	"context"
+	"reflect"
 	"strconv"
 	"strings"
 
 	egressv1 "github.com/Azure/azure-firewall-egress-controller/pkg/api/v1"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	a "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v2"
 	n "github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-03-01/network"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
@@ -32,6 +36,7 @@ type AzClient interface {
 type azClient struct {
 	fwPolicyClient                    n.FirewallPoliciesClient
 	fwPolicyRuleCollectionGroupClient n.FirewallPolicyRuleCollectionGroupsClient
+	ipGroupClient                     *a.IPGroupsClient
 	clientID                          string
 
 	subscriptionID                  string
@@ -40,6 +45,9 @@ type azClient struct {
 	fwPolicyRuleCollectionGroupName string
 	queue                           *Queue
 	client                          client.Client
+	LastNodeLabels                  map[string]map[string]string
+	LastPodLabels                   map[string]map[string]string
+	LastEgressRules                 egressv1.EgressrulesList
 
 	ctx context.Context
 }
@@ -50,10 +58,19 @@ func NewAzClient(subscriptionID string, resourceGroupName string, fwPolicyName s
 	if err != nil {
 		return nil
 	}
-
+	cred, err := azidentity.NewDefaultAzureCredential(nil)
+	if err != nil {
+		klog.Error("failed to obtain a credential: %v", err)
+		return nil
+	}
+	ipGroupClient, err := a.NewIPGroupsClient(string(subscriptionID), cred, nil)
+	if err != nil {
+		klog.Error("failed to create IP group client: %v", err)
+	}
 	az := &azClient{
 		fwPolicyClient:                    n.NewFirewallPoliciesClientWithBaseURI(settings.Environment.ResourceManagerEndpoint, string(subscriptionID)),
 		fwPolicyRuleCollectionGroupClient: n.NewFirewallPolicyRuleCollectionGroupsClientWithBaseURI(settings.Environment.ResourceManagerEndpoint, string(subscriptionID)),
+		ipGroupClient:                     ipGroupClient,
 		clientID:                          clientID,
 
 		subscriptionID:                  subscriptionID,
@@ -62,6 +79,9 @@ func NewAzClient(subscriptionID string, resourceGroupName string, fwPolicyName s
 		fwPolicyRuleCollectionGroupName: fwPolicyRuleCollectionGroupName,
 		queue:                           NewQueue("policyBuilder"),
 		client:                          client,
+		LastNodeLabels:                  make(map[string]map[string]string),
+		LastPodLabels:                   make(map[string]map[string]string),
+		LastEgressRules:                 egressv1.EgressrulesList{},
 
 		ctx: context.Background(),
 	}
@@ -90,6 +110,7 @@ func (az *azClient) UpdateFirewallPolicy(ctx context.Context, req ctrl.Request) 
 
 func (az *azClient) getEgressRules(ctx context.Context, req ctrl.Request) (err error) {
 	var erulesSourceAddresses = make(map[string][]string)
+	var pollers = make(map[string]*runtime.Poller[a.IPGroupsClientCreateOrUpdateResponse])
 	erulesList := &egressv1.EgressrulesList{}
 	listOpts := []client.ListOption{
 		client.InNamespace("default"),
@@ -108,34 +129,237 @@ func (az *azClient) getEgressRules(ctx context.Context, req ctrl.Request) (err e
 		return err
 	}
 
+	//check if change in egress rule caused the reconcile request
+	if az.checkIfEgressRuleChanged(req, *erulesList) {
+		for _, erule := range erulesList.Items {
+			var sourceIpGroups []string
+			if erule.Spec.PodSelector != nil {
+				for _, m := range erule.Spec.PodSelector {
+					for k, v := range m {
+						sourceAddress := getSourceAddressesByPodLabels(k, v, *podList)
+						IPGroupName := "IPGroup-pod-" + k + v
+						var addressesInIpGroup []*string
+						res, err1 := az.ipGroupClient.Get(az.ctx, az.resourceGroupName, IPGroupName, &a.IPGroupsClientGetOptions{Expand: nil})
+						if err1 == nil {
+							addressesInIpGroup = res.IPGroup.Properties.IPAddresses
+							if *res.Properties.ProvisioningState == a.ProvisioningStateUpdating && pollers[IPGroupName] != nil {
+								_, err = pollers[IPGroupName].PollUntilDone(ctx, nil)
+							}
+						}
+						if len(sourceAddress) != len(addressesInIpGroup) || checkIfElementsPresentInArray(sourceAddress, addressesInIpGroup) {
+							poller := az.updateIpGroup(sourceAddress, IPGroupName)
+							pollers[IPGroupName] = poller
+						}
+						res, err1 = az.ipGroupClient.Get(az.ctx, az.resourceGroupName, IPGroupName, &a.IPGroupsClientGetOptions{Expand: nil})
+						if err1 != nil {
+							klog.Error("failed to get the IP Group", err)
+						}
+						sourceIpGroups = append(sourceIpGroups, *res.IPGroup.ID)
+					}
+				}
+			} else if erule.Spec.NodeSelector != nil {
+				for _, m := range erule.Spec.NodeSelector {
+					for k, v := range m {
+						sourceAddress := getSourceAddressesByNodeLabels(k, v, *nodeList)
+						IPGroupName := "IPGroup-node-" + k + v
+						var addressesInIpGroup []*string
+						res, err1 := az.ipGroupClient.Get(az.ctx, az.resourceGroupName, IPGroupName, &a.IPGroupsClientGetOptions{Expand: nil})
+						if err1 == nil {
+							addressesInIpGroup = res.IPGroup.Properties.IPAddresses
+							if *res.Properties.ProvisioningState == a.ProvisioningStateUpdating && pollers[IPGroupName] != nil {
+								_, err = pollers[IPGroupName].PollUntilDone(ctx, nil)
+							}
+						}
+						if err1 != nil || len(sourceAddress) != len(addressesInIpGroup) || checkIfElementsPresentInArray(sourceAddress, addressesInIpGroup) {
+							poller := az.updateIpGroup(sourceAddress, IPGroupName)
+							pollers[IPGroupName] = poller
+						}
+						res, err1 = az.ipGroupClient.Get(az.ctx, az.resourceGroupName, IPGroupName, &a.IPGroupsClientGetOptions{Expand: nil})
+						if err1 != nil {
+							klog.Error("failed to get the IP Group", err)
+						}
+						sourceIpGroups = append(sourceIpGroups, *res.IPGroup.ID)
+					}
+				}
+			}
+			erulesSourceAddresses[erule.Name] = sourceIpGroups
+		}
+		for _, poller := range pollers {
+			_, err = poller.PollUntilDone(ctx, nil)
+			if err != nil {
+				klog.Error("failed to pull the result: %v", err)
+			}
+		}
+		klog.Info("Ip Group update complete........")
+		klog.Info("Source Addresses:", erulesSourceAddresses)
+
+		az.BuildPolicy(*erulesList, erulesSourceAddresses)
+
+	} else if checkIfNodeChanged(req, *nodeList) || checkIfPodChanged(req, *podList) {
+		var sourceAddress []*string
+		ruleExistsOnLabels := az.checkIfRuleExistsOnNodeOrPod(ctx, req, *erulesList, *nodeList, *podList)
+		klog.Info(ruleExistsOnLabels)
+		for label, address := range ruleExistsOnLabels {
+			res, err1 := az.ipGroupClient.Get(az.ctx, az.resourceGroupName, label, &a.IPGroupsClientGetOptions{Expand: nil})
+			if err1 == nil {
+				sourceAddress = res.IPGroup.Properties.IPAddresses
+			}
+			if len(address) != len(sourceAddress) || checkIfElementsPresentInArray(address, sourceAddress) {
+				poller := az.updateIpGroup(address, label)
+				_, err = poller.PollUntilDone(ctx, nil)
+				if err != nil {
+					klog.Error("failed to pull the result: %v", err)
+				}
+				klog.Info("Ip Group update complete........\n\n")
+			}
+		}
+	}
+	return
+}
+
+func (az *azClient) checkIfEgressRuleChanged(req ctrl.Request, erulesList egressv1.EgressrulesList) bool {
+	//check if erule is in current egress rules
 	for _, erule := range erulesList.Items {
-		var sourceAddress []string
-		if erule.Spec.PodSelector != nil {
-			for _, pod := range podList.Items {
-				if pod.ObjectMeta.Namespace != "kube-system" {
-					if pod.Status.Phase == "Running" && checkIfLabelExists(erule.Spec.PodSelector, pod.ObjectMeta.Labels) {
-						sourceAddress = append(sourceAddress, pod.Status.HostIP)
+		if erule.Name == req.NamespacedName.Name {
+			az.LastEgressRules = erulesList
+			return true
+		}
+	}
+	//check if erule is in last egress rules, it means the erule is deleted.
+	for _, erule := range az.LastEgressRules.Items {
+		if erule.Name == req.NamespacedName.Name {
+			az.LastEgressRules = erulesList
+			return true
+		}
+	}
+	return false
+}
+
+func checkIfNodeChanged(req ctrl.Request, nodeList corev1.NodeList) bool {
+	for _, node := range nodeList.Items {
+		if node.Name == req.NamespacedName.Name {
+			return true
+		}
+	}
+	return false
+}
+
+func checkIfPodChanged(req ctrl.Request, podList corev1.PodList) bool {
+	for _, pod := range podList.Items {
+		if pod.Name == req.NamespacedName.Name {
+			return true
+		}
+	}
+	return false
+}
+
+func (az *azClient) checkIfRuleExistsOnNodeOrPod(ctx context.Context, req ctrl.Request, erulesList egressv1.EgressrulesList, nodeList corev1.NodeList, podList corev1.PodList) map[string][]*string {
+	if checkIfNodeChanged(req, nodeList) {
+		var rulesExistsOnNodeLabels = make(map[string][]*string)
+		node := &corev1.Node{}
+		if err := az.client.Get(ctx, req.NamespacedName, node); err != nil {
+			klog.Error(err, "unable to fetch Node")
+		}
+		for _, erule := range erulesList.Items {
+			if erule.Spec.NodeSelector != nil {
+				for _, m := range erule.Spec.NodeSelector {
+					for k, v := range m {
+						if checkIfLabelExists(k, v, node.ObjectMeta.Labels) {
+							sourceAddress := getSourceAddressesByNodeLabels(k, v, nodeList)
+							rulesExistsOnNodeLabels["IPGroup-node-"+k+v] = sourceAddress
+						}
 					}
 				}
 			}
 		}
+		if !reflect.DeepEqual(node.ObjectMeta.Labels, az.LastNodeLabels[node.Name]) {
+			// Node selector has been modified, get the changes
+			oldSelector := az.LastNodeLabels[node.Name]
+			newSelector := node.ObjectMeta.Labels
+			changes := make(map[string]string)
+			for key, value := range oldSelector {
+				if newSelector[key] != value {
+					changes[key] = value
+				}
+			}
 
-		if erule.Spec.NodeSelector != nil {
-			for _, node := range nodeList.Items {
-				if checkIfLabelExists(erule.Spec.NodeSelector, node.ObjectMeta.Labels) {
-					sourceAddress = append(sourceAddress, node.Status.Addresses[0].Address)
+			for _, erule := range erulesList.Items {
+				if erule.Spec.NodeSelector != nil {
+					for _, m := range erule.Spec.NodeSelector {
+						for k, v := range m {
+							if checkIfLabelExists(k, v, changes) {
+								sourceAddress := getSourceAddressesByNodeLabels(k, v, nodeList)
+								rulesExistsOnNodeLabels["IPGroup-node-"+k+v] = sourceAddress
+							}
+						}
+					}
+				}
+
+			}
+		}
+		az.LastNodeLabels[node.Name] = node.ObjectMeta.Labels
+		return rulesExistsOnNodeLabels
+	} else {
+		var rulesExistsOnPodLabels = make(map[string][]*string)
+		pod := &corev1.Pod{}
+		if err := az.client.Get(ctx, req.NamespacedName, pod); err != nil {
+			klog.Error(err, "unable to fetch Pod")
+		}
+		for _, erule := range erulesList.Items {
+			if erule.Spec.PodSelector != nil {
+				for _, m := range erule.Spec.PodSelector {
+					for k, v := range m {
+						if checkIfLabelExists(k, v, pod.ObjectMeta.Labels) {
+							sourceAddress := getSourceAddressesByPodLabels(k, v, podList)
+							rulesExistsOnPodLabels["IPGroup-pod-"+k+v] = sourceAddress
+						}
+					}
 				}
 			}
 		}
+		if !reflect.DeepEqual(pod.ObjectMeta.Labels, az.LastPodLabels[pod.Name]) {
+			// Pod selector has been modified, get the changes
+			oldSelector := az.LastPodLabels[pod.Name]
+			newSelector := pod.ObjectMeta.Labels
+			changes := make(map[string]string)
+			for key, value := range oldSelector {
+				if newSelector[key] != value {
+					changes[key] = value
+				}
+			}
 
-		sourceAddress = unique(sourceAddress)
-		erulesSourceAddresses[erule.Name] = sourceAddress
+			for _, erule := range erulesList.Items {
+				if erule.Spec.PodSelector != nil {
+					for _, m := range erule.Spec.PodSelector {
+						for k, v := range m {
+							if checkIfLabelExists(k, v, changes) {
+								sourceAddress := getSourceAddressesByPodLabels(k, v, podList)
+								rulesExistsOnPodLabels["IPGroup-pod-"+k+v] = sourceAddress
+							}
+						}
+					}
+				}
+			}
+		}
+		az.LastNodeLabels[pod.Name] = pod.ObjectMeta.Labels
+		return rulesExistsOnPodLabels
 	}
+}
 
-	klog.Info("Source Addresses:", erulesSourceAddresses)
+func (az *azClient) updateIpGroup(sourceAddress []*string, ipGroupsName string) *runtime.Poller[a.IPGroupsClientCreateOrUpdateResponse] {
+	poller, err := az.ipGroupClient.BeginCreateOrUpdate(az.ctx, az.resourceGroupName, ipGroupsName, a.IPGroup{
+		Location: to.StringPtr("eastus"),
+		Tags:     map[string]*string{},
+		Properties: &a.IPGroupPropertiesFormat{
+			IPAddresses: sourceAddress,
+		},
+	}, nil)
+	if err != nil {
+		klog.Error("Error updating the Ip Group: ", err)
+	}
+	klog.Info("Updating Ip Group: ", ipGroupsName)
 
-	az.BuildPolicy(*erulesList, erulesSourceAddresses)
-	return
+	return poller
 }
 
 func (az *azClient) BuildPolicy(erulesList egressv1.EgressrulesList, erulesSourceAddresses map[string][]string) (err error) {
@@ -156,7 +380,7 @@ func (az *azClient) BuildPolicy(erulesList egressv1.EgressrulesList, erulesSourc
 		return
 	}
 
-	klog.Info("Firewall Policy update successful...\n\n")
+	klog.Info("Firewall Policy update successful.....\n\n")
 	return
 }
 
@@ -164,7 +388,7 @@ func (az *azClient) buildFirewallConfig(erulesList egressv1.EgressrulesList, eru
 	var ruleCollections []n.BasicFirewallPolicyRuleCollection
 
 	for _, erule := range erulesList.Items {
-		if (len(erulesSourceAddresses[erule.Name]) != 0) && (erulesSourceAddresses[erule.Name] != nil) {
+		if len(erulesSourceAddresses[erule.Name]) != 0 {
 			if len(ruleCollections) == 0 || az.notFoundRuleCollection(erule, ruleCollections) {
 				ruleCollection := az.createRuleCollection(erule, erulesSourceAddresses)
 				ruleCollections = append(ruleCollections, ruleCollection)
@@ -252,7 +476,7 @@ func (az *azClient) getRule(erule egressv1.Egressrules, erulesSourceAddresses ma
 			terminateTLS = true
 		}
 		rule := &n.ApplicationRule{
-			SourceAddresses:      &(sourceAddresses),
+			SourceIPGroups:       &(sourceAddresses),
 			DestinationAddresses: &(destinationAddresses),
 			TargetFqdns:          &(targetFqdns),
 			TargetUrls:           &(targetUrls),
@@ -272,7 +496,7 @@ func (az *azClient) getRule(erule egressv1.Egressrules, erulesSourceAddresses ma
 			destinationFqdns = erule.Spec.DestinationFqdns
 		}
 		rule := &n.Rule{
-			SourceAddresses:      &(sourceAddresses),
+			SourceIPGroups:       &(sourceAddresses),
 			DestinationAddresses: &(destinationAddresses),
 			DestinationFqdns:     &(destinationFqdns),
 			DestinationPorts:     &(erule.Spec.DestinationPorts),
