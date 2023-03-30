@@ -86,7 +86,6 @@ spec:
                 type: array
             required:
             - action
-            - nodeSelector
             - protocol
             - ruleType
             type: object
