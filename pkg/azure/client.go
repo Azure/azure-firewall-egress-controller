@@ -198,7 +198,6 @@ func (az *azClient) getEgressRules(ctx context.Context, req ctrl.Request) (err e
 	} else if checkIfNodeChanged(req, *nodeList) || checkIfPodChanged(req, *podList) {
 		var sourceAddress []*string
 		ruleExistsOnLabels := az.checkIfRuleExistsOnNodeOrPod(ctx, req, *erulesList, *nodeList, *podList)
-		klog.Info(ruleExistsOnLabels)
 		for label, address := range ruleExistsOnLabels {
 			res, err1 := az.ipGroupClient.Get(az.ctx, az.resourceGroupName, label, &a.IPGroupsClientGetOptions{Expand: nil})
 			if err1 == nil {
