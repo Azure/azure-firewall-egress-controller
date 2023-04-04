@@ -14,6 +14,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
+var jobsInQueue = make(map[string]bool)
+
 type Queue struct {
 	name   string
 	jobs   chan Job
@@ -45,11 +47,16 @@ func NewQueue(name string) *Queue {
 }
 
 func (q *Queue) AddJob(job Job) {
-	q.jobs <- job
+	resourceName := job.Request.NamespacedName.Name
+	if jobsInQueue[resourceName] == false {
+		jobsInQueue[resourceName] = true
+		q.jobs <- job
+	}
 }
 
 func (j Job) Run() error {
-	klog.Info("Firewall Policy update event triggered for the reconcile request:", j.Request)
+	resourceName := j.Request.NamespacedName.Name
+	jobsInQueue[resourceName] = false
 	j.AzClient.getEgressRules(j.ctx, j.Request)
 	return nil
 }

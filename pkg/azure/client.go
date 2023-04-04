@@ -25,6 +25,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+var pollers = make(map[string]*runtime.Poller[a.IPGroupsClientCreateOrUpdateResponse])
+
 // AzClient is an interface for client to Azure
 type AzClient interface {
 	SetAuthorizer(authorizer autorest.Authorizer)
@@ -45,9 +47,9 @@ type azClient struct {
 	fwPolicyRuleCollectionGroupName string
 	queue                           *Queue
 	client                          client.Client
-	LastNodeLabels                  map[string]map[string]string
-	LastPodLabels                   map[string]map[string]string
-	LastEgressRules                 egressv1.EgressrulesList
+	lastNodeLabels                  map[string]map[string]string
+	lastPodLabels                   map[string]map[string]string
+	lastEgressRules                 egressv1.EgressrulesList
 
 	ctx context.Context
 }
@@ -79,9 +81,9 @@ func NewAzClient(subscriptionID string, resourceGroupName string, fwPolicyName s
 		fwPolicyRuleCollectionGroupName: fwPolicyRuleCollectionGroupName,
 		queue:                           NewQueue("policyBuilder"),
 		client:                          client,
-		LastNodeLabels:                  make(map[string]map[string]string),
-		LastPodLabels:                   make(map[string]map[string]string),
-		LastEgressRules:                 egressv1.EgressrulesList{},
+		lastNodeLabels:                  make(map[string]map[string]string),
+		lastPodLabels:                   make(map[string]map[string]string),
+		lastEgressRules:                 egressv1.EgressrulesList{},
 
 		ctx: context.Background(),
 	}
@@ -110,7 +112,6 @@ func (az *azClient) UpdateFirewallPolicy(ctx context.Context, req ctrl.Request) 
 
 func (az *azClient) getEgressRules(ctx context.Context, req ctrl.Request) (err error) {
 	var erulesSourceAddresses = make(map[string][]string)
-	var pollers = make(map[string]*runtime.Poller[a.IPGroupsClientCreateOrUpdateResponse])
 	erulesList := &egressv1.EgressrulesList{}
 	listOpts := []client.ListOption{
 		client.InNamespace("default"),
@@ -131,6 +132,7 @@ func (az *azClient) getEgressRules(ctx context.Context, req ctrl.Request) (err e
 
 	//check if change in egress rule caused the reconcile request
 	if az.checkIfEgressRuleChanged(req, *erulesList) {
+		klog.Info("Firewall Policy update event triggered for the reconcile request:", req)
 		for _, erule := range erulesList.Items {
 			var sourceIpGroups []string
 			if erule.Spec.PodSelector != nil {
@@ -146,13 +148,13 @@ func (az *azClient) getEgressRules(ctx context.Context, req ctrl.Request) (err e
 								_, err = pollers[IPGroupName].PollUntilDone(ctx, nil)
 							}
 						}
-						if len(sourceAddress) != len(addressesInIpGroup) || checkIfElementsPresentInArray(sourceAddress, addressesInIpGroup) {
+						if err1 != nil || len(sourceAddress) != len(addressesInIpGroup) || checkIfElementsPresentInArray(sourceAddress, addressesInIpGroup) {
 							poller := az.updateIpGroup(sourceAddress, IPGroupName)
 							pollers[IPGroupName] = poller
 						}
 						res, err1 = az.ipGroupClient.Get(az.ctx, az.resourceGroupName, IPGroupName, &a.IPGroupsClientGetOptions{Expand: nil})
 						if err1 != nil {
-							klog.Error("failed to get the IP Group", err)
+							klog.Error("failed to get the IP Group", err1)
 						}
 						sourceIpGroups = append(sourceIpGroups, *res.IPGroup.ID)
 					}
@@ -176,7 +178,7 @@ func (az *azClient) getEgressRules(ctx context.Context, req ctrl.Request) (err e
 						}
 						res, err1 = az.ipGroupClient.Get(az.ctx, az.resourceGroupName, IPGroupName, &a.IPGroupsClientGetOptions{Expand: nil})
 						if err1 != nil {
-							klog.Error("failed to get the IP Group", err)
+							klog.Error("failed to get the IP Group", err1)
 						}
 						sourceIpGroups = append(sourceIpGroups, *res.IPGroup.ID)
 					}
@@ -184,32 +186,25 @@ func (az *azClient) getEgressRules(ctx context.Context, req ctrl.Request) (err e
 			}
 			erulesSourceAddresses[erule.Name] = sourceIpGroups
 		}
-		for _, poller := range pollers {
-			_, err = poller.PollUntilDone(ctx, nil)
-			if err != nil {
-				klog.Error("failed to pull the result: %v", err)
-			}
-		}
-		klog.Info("Ip Group update complete........")
 		klog.Info("Source Addresses:", erulesSourceAddresses)
 
 		az.BuildPolicy(*erulesList, erulesSourceAddresses)
 
 	} else if checkIfNodeChanged(req, *nodeList) || checkIfPodChanged(req, *podList) {
+		klog.Info("Firewall Policy update event triggered for the reconcile request:", req)
 		var sourceAddress []*string
 		ruleExistsOnLabels := az.checkIfRuleExistsOnNodeOrPod(ctx, req, *erulesList, *nodeList, *podList)
 		for label, address := range ruleExistsOnLabels {
 			res, err1 := az.ipGroupClient.Get(az.ctx, az.resourceGroupName, label, &a.IPGroupsClientGetOptions{Expand: nil})
 			if err1 == nil {
 				sourceAddress = res.IPGroup.Properties.IPAddresses
+				if *res.Properties.ProvisioningState == a.ProvisioningStateUpdating && pollers[label] != nil {
+					_, err = pollers[label].PollUntilDone(ctx, nil)
+				}
 			}
 			if len(address) != len(sourceAddress) || checkIfElementsPresentInArray(address, sourceAddress) {
 				poller := az.updateIpGroup(address, label)
-				_, err = poller.PollUntilDone(ctx, nil)
-				if err != nil {
-					klog.Error("failed to pull the result: %v", err)
-				}
-				klog.Info("Ip Group update complete........\n\n")
+				pollers[label] = poller
 			}
 		}
 	}
@@ -220,14 +215,14 @@ func (az *azClient) checkIfEgressRuleChanged(req ctrl.Request, erulesList egress
 	//check if erule is in current egress rules
 	for _, erule := range erulesList.Items {
 		if erule.Name == req.NamespacedName.Name {
-			az.LastEgressRules = erulesList
+			az.lastEgressRules = erulesList
 			return true
 		}
 	}
 	//check if erule is in last egress rules, it means the erule is deleted.
-	for _, erule := range az.LastEgressRules.Items {
+	for _, erule := range az.lastEgressRules.Items {
 		if erule.Name == req.NamespacedName.Name {
-			az.LastEgressRules = erulesList
+			az.lastEgressRules = erulesList
 			return true
 		}
 	}
@@ -271,9 +266,9 @@ func (az *azClient) checkIfRuleExistsOnNodeOrPod(ctx context.Context, req ctrl.R
 				}
 			}
 		}
-		if !reflect.DeepEqual(node.ObjectMeta.Labels, az.LastNodeLabels[node.Name]) {
+		if !reflect.DeepEqual(node.ObjectMeta.Labels, az.lastNodeLabels[node.Name]) {
 			// Node selector has been modified, get the changes
-			oldSelector := az.LastNodeLabels[node.Name]
+			oldSelector := az.lastNodeLabels[node.Name]
 			newSelector := node.ObjectMeta.Labels
 			changes := make(map[string]string)
 			for key, value := range oldSelector {
@@ -296,7 +291,7 @@ func (az *azClient) checkIfRuleExistsOnNodeOrPod(ctx context.Context, req ctrl.R
 
 			}
 		}
-		az.LastNodeLabels[node.Name] = node.ObjectMeta.Labels
+		az.lastNodeLabels[node.Name] = node.ObjectMeta.Labels
 		return rulesExistsOnNodeLabels
 	} else {
 		var rulesExistsOnPodLabels = make(map[string][]*string)
@@ -316,9 +311,9 @@ func (az *azClient) checkIfRuleExistsOnNodeOrPod(ctx context.Context, req ctrl.R
 				}
 			}
 		}
-		if !reflect.DeepEqual(pod.ObjectMeta.Labels, az.LastPodLabels[pod.Name]) {
+		if !reflect.DeepEqual(pod.ObjectMeta.Labels, az.lastPodLabels[pod.Name]) {
 			// Pod selector has been modified, get the changes
-			oldSelector := az.LastPodLabels[pod.Name]
+			oldSelector := az.lastPodLabels[pod.Name]
 			newSelector := pod.ObjectMeta.Labels
 			changes := make(map[string]string)
 			for key, value := range oldSelector {
@@ -340,7 +335,7 @@ func (az *azClient) checkIfRuleExistsOnNodeOrPod(ctx context.Context, req ctrl.R
 				}
 			}
 		}
-		az.LastNodeLabels[pod.Name] = pod.ObjectMeta.Labels
+		az.lastPodLabels[pod.Name] = pod.ObjectMeta.Labels
 		return rulesExistsOnPodLabels
 	}
 }
