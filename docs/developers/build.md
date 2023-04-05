@@ -9,13 +9,36 @@ AFEC monitors a subset of Kubernetes Resources and translates them to Azure Fire
     - Option 1: [Using a Service Principal](#using-a-service-principal)
 - [Install Azure Firewall Egress Controller using Helm](#install-azure-firewall-egress-controller-as-a-helm-chart)
 
-### Prerequisites
+## Prerequisites
 This documents assumes you already have the following tools and infrastructure installed:
-- Azure Firewall as the next hop to the AKS cluster. Please follow [this](https://learn.microsoft.com/en-us/azure/aks/limit-egress-traffic) documentation for this setup.
+- Azure Firewall as the next hop to the AKS cluster. Please follow [this](https://learn.microsoft.com/en-us/azure/aks/limit-egress-traffic) documentation for the setup. Make sure to add additional rules in the firewall to allow node <-> api-server communication and also to allow access to images in the Microsoft Container Registry(MCR).
 - Create an Active Directory Service Principal.
-- `az` CLI, `kubectl`, and `helm` installed. These tools are required for the commands below.
+- If you are using [Azure Cloud Shell](https://shell.azure.com/) it has all the tools already installed. Launch your shell from shell.azure.com or by clicking the link: [Launch Azure Cloud Shell](https://shell.azure.com). If you choose to use another environment, please ensure the following command line tools are installed:
+  1. `az` - Azure CLI: [installation instructions](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest)
+  2. `kubectl` - Kubernetes command-line tool: [installation instructions](https://kubernetes.io/docs/tasks/tools/install-kubectl)
+  3. `helm` (version 3.7 or later) - Kubernetes package manager: [installation instructions](https://github.com/helm/helm/releases/latest)
 
-### Azure Resource Manager Authentication
+### Setup Kubernetes Credentials
+
+For the following steps we need setup [kubectl](https://kubectl.docs.kubernetes.io/) command,
+which we will use to connect to our new Kubernetes cluster. We will use `az` CLI to obtain credentials for Kubernetes.
+
+Get credentials for your newly deployed AKS ([read more](https://docs.microsoft.com/en-us/azure/aks/kubernetes-walkthrough#connect-to-the-cluster)):
+
+```bash
+az aks get-credentials --resource-group aksClusterResourceGroupName --name aksClusterName
+```
+
+### Deploying cert-manager
+Validation Webhooks are implemented for the CRD. In order for the API server to communicate with the webhook component, the webhook requires a TLS certificate that the apiserver is configured to trust. We are using [cert-manager](https://github.com/cert-manager/cert-manager) for provisioning the certificates for the webhook.
+
+cert-manager Installation ([read more](https://cert-manager.io/docs/installation/)):
+
+```bash
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.11.0/cert-manager.yaml
+```
+
+## Azure Resource Manager Authentication
 
 AFEC communicates with the Kubernetes API server and the Azure Resource Manager. It requires an identity to access
 these APIs.
@@ -33,7 +56,7 @@ AFEC access to ARM can be possible by creating service principal. Follow the ste
 
 ## Install Azure Firewall Egress Controller as a Helm Chart
 [Helm](https://docs.microsoft.com/en-us/azure/aks/kubernetes-helm) is a package manager for
-Kubernetes. We will leverage it to install the `azure-firewall-egress-controller` package.
+Kubernetes. This document uses Helm version 3.7 or later. We will leverage it to install the `azure-firewall-egress-controller` package.
 Use [Cloud Shell](https://shell.azure.com/) to install install the AFEC Helm package:
 
 1. Install Helm chart
