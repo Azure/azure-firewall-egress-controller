@@ -113,9 +113,7 @@ func (az *azClient) UpdateFirewallPolicy(ctx context.Context, req ctrl.Request) 
 func (az *azClient) getEgressRules(ctx context.Context, req ctrl.Request) (err error) {
 	var erulesSourceAddresses = make(map[string][]string)
 	erulesList := &egressv1.EgressrulesList{}
-	listOpts := []client.ListOption{
-		client.InNamespace("default"),
-	}
+	listOpts := []client.ListOption{}
 	if err := az.client.List(ctx, erulesList, listOpts...); err != nil {
 		return err
 	}
@@ -132,7 +130,6 @@ func (az *azClient) getEgressRules(ctx context.Context, req ctrl.Request) (err e
 
 	//check if change in egress rule caused the reconcile request
 	if az.checkIfEgressRuleChanged(req, *erulesList) {
-		klog.Info("Firewall Policy update event triggered for the reconcile request:", req)
 		for _, erule := range erulesList.Items {
 			var sourceIpGroups []string
 			if erule.Spec.PodSelector != nil {
@@ -191,7 +188,6 @@ func (az *azClient) getEgressRules(ctx context.Context, req ctrl.Request) (err e
 		az.BuildPolicy(*erulesList, erulesSourceAddresses)
 
 	} else if checkIfNodeChanged(req, *nodeList) || checkIfPodChanged(req, *podList) {
-		klog.Info("Firewall Policy update event triggered for the reconcile request:", req)
 		var sourceAddress []*string
 		ruleExistsOnLabels := az.checkIfRuleExistsOnNodeOrPod(ctx, req, *erulesList, *nodeList, *podList)
 		for label, address := range ruleExistsOnLabels {

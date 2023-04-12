@@ -57,6 +57,7 @@ func (q *Queue) AddJob(job Job) {
 func (j Job) Run() error {
 	resourceName := j.Request.NamespacedName.Name
 	jobsInQueue[resourceName] = false
+	klog.Info("Firewall Policy update event triggered for the reconcile request:", j.Request)
 	j.AzClient.getEgressRules(j.ctx, j.Request)
 	return nil
 }

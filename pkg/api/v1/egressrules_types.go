@@ -50,6 +50,7 @@ type EgressrulesStatus struct {
 }
 
 //+kubebuilder:object:root=true
+//+kubebuilder:resource:scope=Cluster
 //+kubebuilder:subresource:status
 
 // Egressrules is the Schema for the egressrules API
