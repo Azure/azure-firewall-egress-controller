@@ -2,7 +2,6 @@ apiVersion: egress.azure-firewall-egress-controller.io/v1
 kind: Egressrules
 metadata:
   name: egressrules-sample4
-  namespace : default
 spec:
   # TODO(user): Add fields here
   ruleCollectionName: "testing-voting-app"

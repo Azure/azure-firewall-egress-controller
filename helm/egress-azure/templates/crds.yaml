@@ -58,12 +58,6 @@ spec:
                     type: string
                   type: object
                 type: array
-              podSelector:
-                items:
-                  additionalProperties:
-                    type: string
-                  type: object
-                type: array
               protocol:
                 items:
                   type: string

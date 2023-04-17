@@ -29,7 +29,6 @@ type EgressrulesSpec struct {
 	RuleCollectionName   string              `json:"ruleCollectionName,omitempty"`
 	SourceAddress        []string            `json:"sourceAddress,omitempty"`
 	NodeSelector         []map[string]string `json:"nodeSelector,omitempty"`
-	PodSelector          []map[string]string `json:"podSelector,omitempty"`
 	DestinationAddresses []string            `json:"destinationAddresses,omitempty"`
 	DestinationPorts     []string            `json:"destinationPorts,omitempty"`
 	DestinationFqdns     []string            `json:"destinationFqdns,omitempty"`

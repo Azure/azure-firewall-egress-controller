@@ -105,19 +105,6 @@ func (in *EgressrulesSpec) DeepCopyInto(out *EgressrulesSpec) {
 			}
 		}
 	}
-	if in.PodSelector != nil {
-		in, out := &in.PodSelector, &out.PodSelector
-		*out = make([]map[string]string, len(*in))
-		for i := range *in {
-			if (*in)[i] != nil {
-				in, out := &(*in)[i], &(*out)[i]
-				*out = make(map[string]string, len(*in))
-				for key, val := range *in {
-					(*out)[key] = val
-				}
-			}
-		}
-	}
 	if in.DestinationAddresses != nil {
 		in, out := &in.DestinationAddresses, &out.DestinationAddresses
 		*out = make([]string, len(*in))

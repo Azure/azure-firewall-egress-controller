@@ -2,10 +2,9 @@ apiVersion: egress.azure-firewall-egress-controller.io/v1
 kind: Egressrules
 metadata:
   name: egressrules-sample1
-  namespace : default
 spec:
   # TODO(user): Add fields here
-  podSelector:
+  nodeSelector:
     - app: "nginx0"
   destinationFqdns: ["*"]
   destinationAddresses: []
