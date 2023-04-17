@@ -64,10 +64,8 @@ func (r *Egressrules) ValidateDelete() error {
 }
 
 func (r *Egressrules) validateFields() error {
-	if r.Spec.NodeSelector != nil && r.Spec.PodSelector != nil {
-		return errors.New("Both Pod Selector and Node Selector cannot be provided in a single rule")
-	} else if r.Spec.NodeSelector == nil && r.Spec.PodSelector == nil {
-		return errors.New("Mandatory field PodSelector/NodeSelector missing")
+	if r.Spec.NodeSelector == nil {
+		return errors.New("Mandatory field NodeSelector missing")
 	}
 	if r.Spec.RuleType == "Application" {
 		if r.Spec.TargetFqdns == nil {

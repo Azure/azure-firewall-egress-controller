@@ -48,7 +48,6 @@ type azClient struct {
 	queue                           *Queue
 	client                          client.Client
 	lastNodeLabels                  map[string]map[string]string
-	lastPodLabels                   map[string]map[string]string
 	lastEgressRules                 egressv1.EgressrulesList
 
 	ctx context.Context
@@ -82,7 +81,6 @@ func NewAzClient(subscriptionID string, resourceGroupName string, fwPolicyName s
 		queue:                           NewQueue("policyBuilder"),
 		client:                          client,
 		lastNodeLabels:                  make(map[string]map[string]string),
-		lastPodLabels:                   make(map[string]map[string]string),
 		lastEgressRules:                 egressv1.EgressrulesList{},
 
 		ctx: context.Background(),
@@ -118,11 +116,6 @@ func (az *azClient) getEgressRules(ctx context.Context, req ctrl.Request) (err e
 		return err
 	}
 
-	podList := &corev1.PodList{}
-	if err := az.client.List(ctx, podList, listOpts...); err != nil {
-		return err
-	}
-
 	nodeList := &corev1.NodeList{}
 	if err := az.client.List(ctx, nodeList, []client.ListOption{}...); err != nil {
 		return err
@@ -132,31 +125,7 @@ func (az *azClient) getEgressRules(ctx context.Context, req ctrl.Request) (err e
 	if az.checkIfEgressRuleChanged(req, *erulesList) {
 		for _, erule := range erulesList.Items {
 			var sourceIpGroups []string
-			if erule.Spec.PodSelector != nil {
-				for _, m := range erule.Spec.PodSelector {
-					for k, v := range m {
-						sourceAddress := getSourceAddressesByPodLabels(k, v, *podList)
-						IPGroupName := "IPGroup-pod-" + k + v
-						var addressesInIpGroup []*string
-						res, err1 := az.ipGroupClient.Get(az.ctx, az.resourceGroupName, IPGroupName, &a.IPGroupsClientGetOptions{Expand: nil})
-						if err1 == nil {
-							addressesInIpGroup = res.IPGroup.Properties.IPAddresses
-							if *res.Properties.ProvisioningState == a.ProvisioningStateUpdating && pollers[IPGroupName] != nil {
-								_, err = pollers[IPGroupName].PollUntilDone(ctx, nil)
-							}
-						}
-						if err1 != nil || len(sourceAddress) != len(addressesInIpGroup) || checkIfElementsPresentInArray(sourceAddress, addressesInIpGroup) {
-							poller := az.updateIpGroup(sourceAddress, IPGroupName)
-							pollers[IPGroupName] = poller
-						}
-						res, err1 = az.ipGroupClient.Get(az.ctx, az.resourceGroupName, IPGroupName, &a.IPGroupsClientGetOptions{Expand: nil})
-						if err1 != nil {
-							klog.Error("failed to get the IP Group", err1)
-						}
-						sourceIpGroups = append(sourceIpGroups, *res.IPGroup.ID)
-					}
-				}
-			} else if erule.Spec.NodeSelector != nil {
+			if erule.Spec.NodeSelector != nil {
 				for _, m := range erule.Spec.NodeSelector {
 					for k, v := range m {
 						sourceAddress := getSourceAddressesByNodeLabels(k, v, *nodeList)
@@ -187,9 +156,9 @@ func (az *azClient) getEgressRules(ctx context.Context, req ctrl.Request) (err e
 
 		az.BuildPolicy(*erulesList, erulesSourceAddresses)
 
-	} else if checkIfNodeChanged(req, *nodeList) || checkIfPodChanged(req, *podList) {
+	} else if checkIfNodeChanged(req, *nodeList) {
 		var sourceAddress []*string
-		ruleExistsOnLabels := az.checkIfRuleExistsOnNodeOrPod(ctx, req, *erulesList, *nodeList, *podList)
+		ruleExistsOnLabels := az.checkIfRuleExistsOnNode(ctx, req, *erulesList, *nodeList)
 		for label, address := range ruleExistsOnLabels {
 			res, err1 := az.ipGroupClient.Get(az.ctx, az.resourceGroupName, label, &a.IPGroupsClientGetOptions{Expand: nil})
 			if err1 == nil {
@@ -234,106 +203,51 @@ func checkIfNodeChanged(req ctrl.Request, nodeList corev1.NodeList) bool {
 	return false
 }
 
-func checkIfPodChanged(req ctrl.Request, podList corev1.PodList) bool {
-	for _, pod := range podList.Items {
-		if pod.Name == req.NamespacedName.Name {
-			return true
+func (az *azClient) checkIfRuleExistsOnNode(ctx context.Context, req ctrl.Request, erulesList egressv1.EgressrulesList, nodeList corev1.NodeList) map[string][]*string {
+	var rulesExistsOnNodeLabels = make(map[string][]*string)
+	node := &corev1.Node{}
+	if err := az.client.Get(ctx, req.NamespacedName, node); err != nil {
+		klog.Error(err, "unable to fetch Node")
+	}
+	for _, erule := range erulesList.Items {
+		if erule.Spec.NodeSelector != nil {
+			for _, m := range erule.Spec.NodeSelector {
+				for k, v := range m {
+					if checkIfLabelExists(k, v, node.ObjectMeta.Labels) {
+						sourceAddress := getSourceAddressesByNodeLabels(k, v, nodeList)
+						rulesExistsOnNodeLabels["IPGroup-node-"+k+v] = sourceAddress
+					}
+				}
+			}
 		}
 	}
-	return false
-}
-
-func (az *azClient) checkIfRuleExistsOnNodeOrPod(ctx context.Context, req ctrl.Request, erulesList egressv1.EgressrulesList, nodeList corev1.NodeList, podList corev1.PodList) map[string][]*string {
-	if checkIfNodeChanged(req, nodeList) {
-		var rulesExistsOnNodeLabels = make(map[string][]*string)
-		node := &corev1.Node{}
-		if err := az.client.Get(ctx, req.NamespacedName, node); err != nil {
-			klog.Error(err, "unable to fetch Node")
+	if !reflect.DeepEqual(node.ObjectMeta.Labels, az.lastNodeLabels[node.Name]) {
+		// Node selector has been modified, get the changes
+		oldSelector := az.lastNodeLabels[node.Name]
+		newSelector := node.ObjectMeta.Labels
+		changes := make(map[string]string)
+		for key, value := range oldSelector {
+			if newSelector[key] != value {
+				changes[key] = value
+			}
 		}
+
 		for _, erule := range erulesList.Items {
 			if erule.Spec.NodeSelector != nil {
 				for _, m := range erule.Spec.NodeSelector {
 					for k, v := range m {
-						if checkIfLabelExists(k, v, node.ObjectMeta.Labels) {
+						if checkIfLabelExists(k, v, changes) {
 							sourceAddress := getSourceAddressesByNodeLabels(k, v, nodeList)
 							rulesExistsOnNodeLabels["IPGroup-node-"+k+v] = sourceAddress
 						}
 					}
 				}
 			}
-		}
-		if !reflect.DeepEqual(node.ObjectMeta.Labels, az.lastNodeLabels[node.Name]) {
-			// Node selector has been modified, get the changes
-			oldSelector := az.lastNodeLabels[node.Name]
-			newSelector := node.ObjectMeta.Labels
-			changes := make(map[string]string)
-			for key, value := range oldSelector {
-				if newSelector[key] != value {
-					changes[key] = value
-				}
-			}
 
-			for _, erule := range erulesList.Items {
-				if erule.Spec.NodeSelector != nil {
-					for _, m := range erule.Spec.NodeSelector {
-						for k, v := range m {
-							if checkIfLabelExists(k, v, changes) {
-								sourceAddress := getSourceAddressesByNodeLabels(k, v, nodeList)
-								rulesExistsOnNodeLabels["IPGroup-node-"+k+v] = sourceAddress
-							}
-						}
-					}
-				}
-
-			}
 		}
-		az.lastNodeLabels[node.Name] = node.ObjectMeta.Labels
-		return rulesExistsOnNodeLabels
-	} else {
-		var rulesExistsOnPodLabels = make(map[string][]*string)
-		pod := &corev1.Pod{}
-		if err := az.client.Get(ctx, req.NamespacedName, pod); err != nil {
-			klog.Error(err, "unable to fetch Pod")
-		}
-		for _, erule := range erulesList.Items {
-			if erule.Spec.PodSelector != nil {
-				for _, m := range erule.Spec.PodSelector {
-					for k, v := range m {
-						if checkIfLabelExists(k, v, pod.ObjectMeta.Labels) {
-							sourceAddress := getSourceAddressesByPodLabels(k, v, podList)
-							rulesExistsOnPodLabels["IPGroup-pod-"+k+v] = sourceAddress
-						}
-					}
-				}
-			}
-		}
-		if !reflect.DeepEqual(pod.ObjectMeta.Labels, az.lastPodLabels[pod.Name]) {
-			// Pod selector has been modified, get the changes
-			oldSelector := az.lastPodLabels[pod.Name]
-			newSelector := pod.ObjectMeta.Labels
-			changes := make(map[string]string)
-			for key, value := range oldSelector {
-				if newSelector[key] != value {
-					changes[key] = value
-				}
-			}
-
-			for _, erule := range erulesList.Items {
-				if erule.Spec.PodSelector != nil {
-					for _, m := range erule.Spec.PodSelector {
-						for k, v := range m {
-							if checkIfLabelExists(k, v, changes) {
-								sourceAddress := getSourceAddressesByPodLabels(k, v, podList)
-								rulesExistsOnPodLabels["IPGroup-pod-"+k+v] = sourceAddress
-							}
-						}
-					}
-				}
-			}
-		}
-		az.lastPodLabels[pod.Name] = pod.ObjectMeta.Labels
-		return rulesExistsOnPodLabels
 	}
+	az.lastNodeLabels[node.Name] = node.ObjectMeta.Labels
+	return rulesExistsOnNodeLabels
 }
 
 func (az *azClient) updateIpGroup(sourceAddress []*string, ipGroupsName string) *runtime.Poller[a.IPGroupsClientCreateOrUpdateResponse] {

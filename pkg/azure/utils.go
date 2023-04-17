@@ -49,18 +49,6 @@ func checkIfElementsPresentInArray(arr1 []*string, arr2 []*string) bool {
 	return newElementFound
 }
 
-func getSourceAddressesByPodLabels(k string, v string, podList corev1.PodList) []*string {
-	var sourceAddresses []*string
-	for _, pod := range podList.Items {
-		if pod.ObjectMeta.Namespace != "kube-system" {
-			if pod.Status.Phase == "Running" && checkIfLabelExists(k, v, pod.ObjectMeta.Labels) {
-				sourceAddresses = append(sourceAddresses, to.StringPtr(pod.Status.HostIP))
-			}
-		}
-	}
-	return sourceAddresses
-}
-
 func getSourceAddressesByNodeLabels(k string, v string, nodeList corev1.NodeList) []*string {
 	var sourceAddresses []*string
 	for _, node := range nodeList.Items {

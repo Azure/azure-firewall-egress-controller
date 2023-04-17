@@ -40,9 +40,6 @@ type EgressrulesReconciler struct {
 //+kubebuilder:rbac:groups=egress.azure-firewall-egress-controller.io,resources=egressrules,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=egress.azure-firewall-egress-controller.io,resources=egressrules/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=egress.azure-firewall-egress-controller.io,resources=egressrules/finalizers,verbs=update
-//+kubebuilder:rbac:groups=core,resources=pods,verbs=get;watch;list
-//+kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=core,resources=pods/status,verbs=get;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=core,resources=nodes,verbs=get;watch;list
 //+kubebuilder:rbac:groups=core,resources=nodes,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=core,resources=nodes/status,verbs=get;watch;create;update;patch;delete
@@ -70,7 +67,6 @@ func (r *EgressrulesReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 func (r *EgressrulesReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&egressv1.Egressrules{}).
-		Watches(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForObject{}).
 		Watches(&source.Kind{Type: &corev1.Node{}}, &handler.EnqueueRequestForObject{}).
 		Complete(r)
 }

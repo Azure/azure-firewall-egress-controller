@@ -2,10 +2,9 @@ apiVersion: egress.azure-firewall-egress-controller.io/v1
 kind: Egressrules
 metadata:
   name: egressrules-sample5
-  namespace : default
 spec:
   ruleCollectionName: "testing-voting-app"
-  podSelector:
+  nodeSelector:
     - app: "voting-app"
   destinationAddresses: ["*"]
   destinationPorts: ["*"]
