@@ -3,7 +3,7 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 // --------------------------------------------------------------------------------------------
 
-package controllers
+package azure
 
 import (
 	"context"
@@ -33,6 +33,8 @@ type AzClient interface {
 	UpdateFirewallPolicy(ctx context.Context, req ctrl.Request) error
 	getEgressRules(ctx context.Context, req ctrl.Request) error
 	BuildPolicy(erule egressv1.EgressrulesList, erulesSourceAddresses map[string][]string) error
+	AddTaints(ctx context.Context, req ctrl.Request)
+	RemoveTaints(ctx context.Context, req ctrl.Request)
 }
 
 type azClient struct {
@@ -98,13 +100,14 @@ func (az *azClient) SetAuthorizer(authorizer autorest.Authorizer) {
 }
 
 func (az *azClient) UpdateFirewallPolicy(ctx context.Context, req ctrl.Request) (err error) {
-	az.checkIfPolicyExists()
-
-	az.queue.AddJob(Job{
+	go az.queue.AddJob(Job{
 		Request:  req,
 		ctx:      ctx,
 		AzClient: az,
 	})
+
+	az.checkIfPolicyExists()
+
 	return
 }
 
@@ -157,6 +160,7 @@ func (az *azClient) getEgressRules(ctx context.Context, req ctrl.Request) (err e
 		az.BuildPolicy(*erulesList, erulesSourceAddresses)
 
 	} else if checkIfNodeChanged(req, *nodeList) {
+		var node_pollers = make(map[string]*runtime.Poller[a.IPGroupsClientCreateOrUpdateResponse])
 		var sourceAddress []*string
 		ruleExistsOnLabels := az.checkIfRuleExistsOnNode(ctx, req, *erulesList, *nodeList)
 		for label, address := range ruleExistsOnLabels {
@@ -170,8 +174,10 @@ func (az *azClient) getEgressRules(ctx context.Context, req ctrl.Request) (err e
 			if len(address) != len(sourceAddress) || checkIfElementsPresentInArray(address, sourceAddress) {
 				poller := az.updateIpGroup(address, label)
 				pollers[label] = poller
+				node_pollers[label] = poller
 			}
 		}
+		go az.WaitForNodeIpGroupUpdate(ctx, req, node_pollers)
 	}
 	return
 }
