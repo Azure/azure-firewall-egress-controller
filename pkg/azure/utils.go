@@ -3,7 +3,7 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 // --------------------------------------------------------------------------------------------
 
-package controllers
+package azure
 
 import (
 	"github.com/Azure/go-autorest/autorest/to"
@@ -57,4 +57,14 @@ func getSourceAddressesByNodeLabels(k string, v string, nodeList corev1.NodeList
 		}
 	}
 	return sourceAddresses
+}
+
+func CheckIfNodeNotReady(node *corev1.Node) bool {
+	conditions := node.Status.Conditions
+	for i := 0; i < len(conditions); i++ {
+		if conditions[i].Type == "Ready" && conditions[i].Status == "False" {
+			return true
+		}
+	}
+	return false
 }

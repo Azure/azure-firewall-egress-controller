@@ -56,8 +56,12 @@ type EgressrulesReconciler struct {
 func (r *EgressrulesReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
 
-	if req.NamespacedName.Namespace != "kube-system" {
+	node := &corev1.Node{}
+	err := r.Get(ctx, req.NamespacedName, node)
+	if (err != nil && req.NamespacedName.Namespace != "kube-system") || (err == nil && !a.CheckIfNodeNotReady(node)) {
 		r.AzClient.UpdateFirewallPolicy(ctx, req)
+	} else if a.CheckIfNodeNotReady(node) {
+		go r.AzClient.AddTaints(ctx, req)
 	}
 
 	return ctrl.Result{}, nil
