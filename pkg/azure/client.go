@@ -26,6 +26,7 @@ import (
 )
 
 var pollers = make(map[string]*runtime.Poller[a.IPGroupsClientCreateOrUpdateResponse])
+var firewallPolicyLoc = ""
 
 // AzClient is an interface for client to Azure
 type AzClient interface {
@@ -106,7 +107,9 @@ func (az *azClient) UpdateFirewallPolicy(ctx context.Context, req ctrl.Request) 
 		AzClient: az,
 	})
 
-	az.checkIfPolicyExists()
+	if firewallPolicyLoc == "" {
+		az.fetchFirewallPolicyLocation()
+	}
 
 	return
 }
@@ -258,7 +261,7 @@ func (az *azClient) checkIfRuleExistsOnNode(ctx context.Context, req ctrl.Reques
 
 func (az *azClient) updateIpGroup(sourceAddress []*string, ipGroupsName string) *runtime.Poller[a.IPGroupsClientCreateOrUpdateResponse] {
 	poller, err := az.ipGroupClient.BeginCreateOrUpdate(az.ctx, az.resourceGroupName, ipGroupsName, a.IPGroup{
-		Location: to.StringPtr("eastus"),
+		Location: to.StringPtr(firewallPolicyLoc),
 		Tags:     map[string]*string{},
 		Properties: &a.IPGroupPropertiesFormat{
 			IPAddresses: sourceAddress,
@@ -486,18 +489,12 @@ func (az *azClient) buildAction(action n.FirewallPolicyFilterRuleCollectionActio
 	return &ruleAction
 }
 
-func (az *azClient) checkIfPolicyExists() (err error) {
-	fwObj := &n.FirewallPolicy{
-		Location: to.StringPtr("westus2"),
-	}
-
-	_, err = az.fwPolicyClient.Get(az.ctx, string(az.resourceGroupName), az.fwPolicyName, "True")
+func (az *azClient) fetchFirewallPolicyLocation() (err error) {
+	fwPolicyObj, err := az.fwPolicyClient.Get(az.ctx, string(az.resourceGroupName), az.fwPolicyName, "True")
 	if err != nil {
-		newfwPolicy, err1 := az.fwPolicyClient.CreateOrUpdate(az.ctx, string(az.resourceGroupName), az.fwPolicyName, *fwObj)
-		if err1 != nil {
-			return
-		}
-		err = newfwPolicy.WaitForCompletionRef(az.ctx, az.fwPolicyClient.BaseClient.Client)
+		klog.Error("Firewall Policy not found")
+	} else {
+		firewallPolicyLoc = *fwPolicyObj.Location
 	}
 	return
 }
