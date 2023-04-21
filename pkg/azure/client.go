@@ -8,8 +8,6 @@ package azure
 import (
 	"context"
 	"reflect"
-	"strconv"
-	"strings"
 
 	egressv1 "github.com/Azure/azure-firewall-egress-controller/pkg/api/v1"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
@@ -25,6 +23,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+const (
+	IpGroupNamePrefix string = "IPGroup-node-"
+)
+
 var pollers = make(map[string]*runtime.Poller[a.IPGroupsClientCreateOrUpdateResponse])
 var firewallPolicyLoc = ""
 
@@ -32,7 +34,7 @@ var firewallPolicyLoc = ""
 type AzClient interface {
 	SetAuthorizer(authorizer autorest.Authorizer)
 	UpdateFirewallPolicy(ctx context.Context, req ctrl.Request) error
-	getEgressRules(ctx context.Context, req ctrl.Request) error
+	processRequest(ctx context.Context, req ctrl.Request) error
 	BuildPolicy(erule egressv1.EgressrulesList, erulesSourceAddresses map[string][]string) error
 	AddTaints(ctx context.Context, req ctrl.Request)
 	RemoveTaints(ctx context.Context, req ctrl.Request)
@@ -114,7 +116,7 @@ func (az *azClient) UpdateFirewallPolicy(ctx context.Context, req ctrl.Request) 
 	return
 }
 
-func (az *azClient) getEgressRules(ctx context.Context, req ctrl.Request) (err error) {
+func (az *azClient) processRequest(ctx context.Context, req ctrl.Request) (err error) {
 	var erulesSourceAddresses = make(map[string][]string)
 	erulesList := &egressv1.EgressrulesList{}
 	listOpts := []client.ListOption{}
@@ -135,7 +137,7 @@ func (az *azClient) getEgressRules(ctx context.Context, req ctrl.Request) (err e
 				for _, m := range erule.Spec.NodeSelector {
 					for k, v := range m {
 						sourceAddress := getSourceAddressesByNodeLabels(k, v, *nodeList)
-						IPGroupName := "IPGroup-node-" + k + v
+						IPGroupName := IpGroupNamePrefix + k + v
 						var addressesInIpGroup []*string
 						res, err1 := az.ipGroupClient.Get(az.ctx, az.resourceGroupName, IPGroupName, &a.IPGroupsClientGetOptions{Expand: nil})
 						if err1 == nil {
@@ -164,20 +166,20 @@ func (az *azClient) getEgressRules(ctx context.Context, req ctrl.Request) (err e
 
 	} else if checkIfNodeChanged(req, *nodeList) {
 		var node_pollers = make(map[string]*runtime.Poller[a.IPGroupsClientCreateOrUpdateResponse])
-		var sourceAddress []*string
 		ruleExistsOnLabels := az.checkIfRuleExistsOnNode(ctx, req, *erulesList, *nodeList)
-		for label, address := range ruleExistsOnLabels {
-			res, err1 := az.ipGroupClient.Get(az.ctx, az.resourceGroupName, label, &a.IPGroupsClientGetOptions{Expand: nil})
+		for IPGroupName, address := range ruleExistsOnLabels {
+			var addressesInIpGroup []*string
+			res, err1 := az.ipGroupClient.Get(az.ctx, az.resourceGroupName, IPGroupName, &a.IPGroupsClientGetOptions{Expand: nil})
 			if err1 == nil {
-				sourceAddress = res.IPGroup.Properties.IPAddresses
-				if *res.Properties.ProvisioningState == a.ProvisioningStateUpdating && pollers[label] != nil {
-					_, err = pollers[label].PollUntilDone(ctx, nil)
+				addressesInIpGroup = res.IPGroup.Properties.IPAddresses
+				if *res.Properties.ProvisioningState == a.ProvisioningStateUpdating && pollers[IPGroupName] != nil {
+					_, err = pollers[IPGroupName].PollUntilDone(ctx, nil)
 				}
 			}
-			if len(address) != len(sourceAddress) || checkIfElementsPresentInArray(address, sourceAddress) {
-				poller := az.updateIpGroup(address, label)
-				pollers[label] = poller
-				node_pollers[label] = poller
+			if len(address) != len(addressesInIpGroup) || checkIfElementsPresentInArray(address, addressesInIpGroup) {
+				poller := az.updateIpGroup(address, IPGroupName)
+				pollers[IPGroupName] = poller
+				node_pollers[IPGroupName] = poller
 			}
 		}
 		go az.WaitForNodeIpGroupUpdate(ctx, req, node_pollers)
@@ -223,8 +225,9 @@ func (az *azClient) checkIfRuleExistsOnNode(ctx context.Context, req ctrl.Reques
 			for _, m := range erule.Spec.NodeSelector {
 				for k, v := range m {
 					if checkIfLabelExists(k, v, node.ObjectMeta.Labels) {
+						IPGroupName := IpGroupNamePrefix + k + v
 						sourceAddress := getSourceAddressesByNodeLabels(k, v, nodeList)
-						rulesExistsOnNodeLabels["IPGroup-node-"+k+v] = sourceAddress
+						rulesExistsOnNodeLabels[IPGroupName] = sourceAddress
 					}
 				}
 			}
@@ -246,8 +249,9 @@ func (az *azClient) checkIfRuleExistsOnNode(ctx context.Context, req ctrl.Reques
 				for _, m := range erule.Spec.NodeSelector {
 					for k, v := range m {
 						if checkIfLabelExists(k, v, changes) {
+							IPGroupName := IpGroupNamePrefix + k + v
 							sourceAddress := getSourceAddressesByNodeLabels(k, v, nodeList)
-							rulesExistsOnNodeLabels["IPGroup-node-"+k+v] = sourceAddress
+							rulesExistsOnNodeLabels[IPGroupName] = sourceAddress
 						}
 					}
 				}
@@ -276,7 +280,7 @@ func (az *azClient) updateIpGroup(sourceAddress []*string, ipGroupsName string) 
 }
 
 func (az *azClient) BuildPolicy(erulesList egressv1.EgressrulesList, erulesSourceAddresses map[string][]string) (err error) {
-	ruleCollections := az.buildFirewallConfig(erulesList, erulesSourceAddresses)
+	ruleCollections := BuildFirewallConfig(erulesList, erulesSourceAddresses)
 
 	fwRuleCollectionGrpObj := &n.FirewallPolicyRuleCollectionGroup{
 		FirewallPolicyRuleCollectionGroupProperties: &(n.FirewallPolicyRuleCollectionGroupProperties{
@@ -297,200 +301,9 @@ func (az *azClient) BuildPolicy(erulesList egressv1.EgressrulesList, erulesSourc
 	return
 }
 
-func (az *azClient) buildFirewallConfig(erulesList egressv1.EgressrulesList, erulesSourceAddresses map[string][]string) *[]n.BasicFirewallPolicyRuleCollection {
-	var ruleCollections []n.BasicFirewallPolicyRuleCollection
-
-	for _, erule := range erulesList.Items {
-		if len(erulesSourceAddresses[erule.Name]) != 0 {
-			if len(ruleCollections) == 0 || az.notFoundRuleCollection(erule, ruleCollections) {
-				ruleCollection := az.createRuleCollection(erule, erulesSourceAddresses)
-				ruleCollections = append(ruleCollections, ruleCollection)
-			} else {
-				for i := 0; i < len(ruleCollections); i++ {
-					ruleCollection := ruleCollections[i].(*n.FirewallPolicyFilterRuleCollection)
-					if erule.Spec.RuleCollectionName == *ruleCollection.Name {
-						rules := *ruleCollection.Rules
-						rule := az.getRule(erule, erulesSourceAddresses)
-						rules = append(rules, rule)
-						ruleCollection.Rules = &rules
-					}
-				}
-			}
-		}
-
-	}
-	return &ruleCollections
-}
-
-func (az *azClient) notFoundRuleCollection(erule egressv1.Egressrules, ruleCollections []n.BasicFirewallPolicyRuleCollection) bool {
-	for i := 0; i < len(ruleCollections); i++ {
-		ruleCollection := ruleCollections[i].(*n.FirewallPolicyFilterRuleCollection)
-		if erule.Spec.RuleCollectionName == *ruleCollection.Name {
-			return false
-		}
-	}
-	return true
-}
-
-func (az *azClient) createRuleCollection(erule egressv1.Egressrules, erulesSourceAddresses map[string][]string) n.BasicFirewallPolicyRuleCollection {
-	var priority int32
-	if erule.Spec.Action == "Allow" {
-		if erule.Spec.RuleType == "Application" {
-			priority = 210
-		} else {
-			priority = 110
-		}
-	} else {
-		if erule.Spec.RuleType == "Application" {
-			priority = 200
-		} else {
-			priority = 100
-		}
-	}
-
-	ruleCollection := &n.FirewallPolicyFilterRuleCollection{
-		Name:               to.StringPtr(erule.Spec.RuleCollectionName),
-		Action:             az.buildAction(erule.Spec.Action),
-		Priority:           &priority,
-		RuleCollectionType: az.getRuleCollectionType(erule.Spec.RuleType),
-		Rules:              az.buildRules(erule, erulesSourceAddresses),
-	}
-	return ruleCollection
-}
-
-func (az *azClient) buildRules(erule egressv1.Egressrules, erulesSourceAddresses map[string][]string) *[]n.BasicFirewallPolicyRule {
-	var rules []n.BasicFirewallPolicyRule
-	rule := az.getRule(erule, erulesSourceAddresses)
-	rules = append(rules, rule)
-	return &rules
-}
-
-func (az *azClient) getRule(erule egressv1.Egressrules, erulesSourceAddresses map[string][]string) n.BasicFirewallPolicyRule {
-
-	sourceAddresses := erulesSourceAddresses[erule.Name]
-	var rule n.BasicFirewallPolicyRule
-
-	if erule.Spec.RuleType == "Application" {
-		targetFqdns := []string{}
-		targetUrls := []string{}
-		var terminateTLS = false
-		destinationAddresses := []string{}
-
-		if erule.Spec.DestinationAddresses != nil {
-			destinationAddresses = erule.Spec.DestinationAddresses
-		}
-		if erule.Spec.TargetFqdns != nil {
-			targetFqdns = erule.Spec.TargetFqdns
-		}
-		if erule.Spec.TargetUrls != nil {
-			targetUrls = erule.Spec.TargetUrls
-		}
-		if len(targetUrls) != 0 {
-			terminateTLS = true
-		}
-		rule := &n.ApplicationRule{
-			SourceIPGroups:       &(sourceAddresses),
-			DestinationAddresses: &(destinationAddresses),
-			TargetFqdns:          &(targetFqdns),
-			TargetUrls:           &(targetUrls),
-			TerminateTLS:         &(terminateTLS),
-			Protocols:            az.getApplicationProtocols(erule.Spec.Protocol),
-			RuleType:             az.getRuleType(erule.Spec.RuleType),
-			Name:                 to.StringPtr(erule.Name),
-		}
-		return rule
-	} else if erule.Spec.RuleType == "Network" {
-		destinationAddresses := []string{}
-		destinationFqdns := []string{}
-		if erule.Spec.DestinationAddresses != nil {
-			destinationAddresses = erule.Spec.DestinationAddresses
-		}
-		if erule.Spec.DestinationFqdns != nil {
-			destinationFqdns = erule.Spec.DestinationFqdns
-		}
-		rule := &n.Rule{
-			SourceIPGroups:       &(sourceAddresses),
-			DestinationAddresses: &(destinationAddresses),
-			DestinationFqdns:     &(destinationFqdns),
-			DestinationPorts:     &(erule.Spec.DestinationPorts),
-			RuleType:             az.getRuleType(erule.Spec.RuleType),
-			IPProtocols:          az.getIpProtocols(erule.Spec.Protocol),
-			Name:                 to.StringPtr(erule.Name),
-		}
-		return rule
-	}
-	return rule
-
-}
-
-func (az *azClient) getApplicationProtocols(protocol []string) *[]n.FirewallPolicyRuleApplicationProtocol {
-	var protocols []n.FirewallPolicyRuleApplicationProtocol
-
-	for i := 0; i < len(protocol); i++ {
-		p := strings.Split(protocol[i], ":")
-		port, _ := strconv.ParseInt(p[1], 10, 64)
-		protocolport := int32(port)
-		var protocolType n.FirewallPolicyRuleApplicationProtocolType
-		if p[0] == "HTTP" {
-			protocolType = n.FirewallPolicyRuleApplicationProtocolTypeHTTP
-		} else {
-			protocolType = n.FirewallPolicyRuleApplicationProtocolTypeHTTPS
-		}
-		ruleApplicationProtocol := n.FirewallPolicyRuleApplicationProtocol{
-			ProtocolType: protocolType,
-			Port:         &protocolport,
-		}
-		protocols = append(protocols, ruleApplicationProtocol)
-	}
-	return &protocols
-}
-
-func (az *azClient) getIpProtocols(protocol []string) *[]n.FirewallPolicyRuleNetworkProtocol {
-	var protocols []n.FirewallPolicyRuleNetworkProtocol
-
-	for i := 0; i < len(protocol); i++ {
-		if protocol[i] == "TCP" {
-			protocols = append(protocols, n.FirewallPolicyRuleNetworkProtocolTCP)
-		} else if protocol[i] == "UDP" {
-			protocols = append(protocols, n.FirewallPolicyRuleNetworkProtocolUDP)
-		} else if protocol[i] == "ICMP" {
-			protocols = append(protocols, n.FirewallPolicyRuleNetworkProtocolICMP)
-		} else {
-			protocols = append(protocols, n.FirewallPolicyRuleNetworkProtocolAny)
-		}
-	}
-	return &protocols
-}
-
-func (az *azClient) getRuleType(ruleType string) n.RuleType {
-	var ruletype n.RuleType
-	if ruleType == "Network" {
-		ruletype = "NetworkRule"
-	} else if ruleType == "Application" {
-		ruletype = "ApplicationRule"
-	}
-	return ruletype
-}
-
-func (az *azClient) getRuleCollectionType(ruleType string) n.RuleCollectionType {
-	var ruleCollectionType n.RuleCollectionType
-	if ruleType == "Network" || ruleType == "Application" {
-		ruleCollectionType = "FirewallPolicyFilterRuleCollection"
-	} else {
-		ruleCollectionType = "FirewallPolicyNatRuleCollection"
-	}
-	return ruleCollectionType
-}
-
-func (az *azClient) buildAction(action n.FirewallPolicyFilterRuleCollectionActionType) *n.FirewallPolicyFilterRuleCollectionAction {
-	ruleAction := n.FirewallPolicyFilterRuleCollectionAction{
-		Type: action,
-	}
-	return &ruleAction
-}
-
 func (az *azClient) fetchFirewallPolicyLocation() (err error) {
 	fwPolicyObj, err := az.fwPolicyClient.Get(az.ctx, string(az.resourceGroupName), az.fwPolicyName, "True")
+
 	if err != nil {
 		klog.Error("Firewall Policy not found")
 	} else {

@@ -70,7 +70,6 @@ func (az *azClient) WaitForNodeIpGroupUpdate(ctx context.Context, req ctrl.Reque
 		}(poller)
 	}
 	wg.Wait()
-	klog.Info("IP group updates complete")
 	az.RemoveTaints(ctx, req)
 }
 
