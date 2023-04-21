@@ -7,7 +7,7 @@ replicaCount: 1
 image:
   repository: mcr.microsoft.com/azfw/afec
   pullPolicy: Always
-  tag: "03182023.1"
+  tag: "04212023"
 
 imagePullSecrets: []
 nameOverride: ""
