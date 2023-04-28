@@ -3,10 +3,12 @@ kind: Egressrules
 metadata:
   name: egressrules-sample3
 spec:
-  ruleCollectionName: "aks-fw-ng"
   nodeSelector:
     - app: "testing"
-  targetFqdns: ["*.google.com"]
-  protocol : ["HTTP:800"]
-  action : "Allow"
-  ruleType: "Application"
+  rules:
+    - ruleName: "erule3-rule"
+      ruleCollectionName: "aks-fw-ng-allow"
+      targetFqdns: ["*.google.com"]
+      protocol : ["HTTP:800"]
+      action : "Allow"
+      ruleType: "Application"

@@ -26,14 +26,19 @@ import (
 
 // EgressrulesSpec defines the desired state of Egressrules
 type EgressrulesSpec struct {
-	RuleCollectionName   string              `json:"ruleCollectionName,omitempty"`
-	SourceAddress        []string            `json:"sourceAddress,omitempty"`
-	NodeSelector         []map[string]string `json:"nodeSelector,omitempty"`
-	DestinationAddresses []string            `json:"destinationAddresses,omitempty"`
-	DestinationPorts     []string            `json:"destinationPorts,omitempty"`
-	DestinationFqdns     []string            `json:"destinationFqdns,omitempty"`
-	TargetFqdns          []string            `json:"targetFqdns,omitempty"`
-	TargetUrls           []string            `json:"targetUrls,omitempty"`
+	SourceAddress []string               `json:"sourceAddress,omitempty"`
+	NodeSelector  []map[string]string    `json:"nodeSelector,omitempty"`
+	Rules         []EgressrulesRulesSpec `json:"rules,omitempty"`
+}
+
+type EgressrulesRulesSpec struct {
+	RuleCollectionName   string   `json:"ruleCollectionName,omitempty"`
+	RuleName             string   `json:"ruleName,omitempty"`
+	DestinationAddresses []string `json:"destinationAddresses,omitempty"`
+	DestinationPorts     []string `json:"destinationPorts,omitempty"`
+	DestinationFqdns     []string `json:"destinationFqdns,omitempty"`
+	TargetFqdns          []string `json:"targetFqdns,omitempty"`
+	TargetUrls           []string `json:"targetUrls,omitempty"`
 	// +kubebuilder:validation:Required
 	Protocol []string `json:"protocol"`
 	// +kubebuilder:validation:Required

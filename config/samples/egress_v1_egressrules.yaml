@@ -6,12 +6,16 @@ spec:
   # TODO(user): Add fields here
   nodeSelector:
     - app: "nginx0"
-  destinationFqdns: ["*"]
-  destinationAddresses: []
-  destinationPorts: ["*"]
-  protocol : ["TCP","UDP"]
-  action : "Deny"
-  ruleType: "Network"
+  rules:
+    - ruleName: "erule1-rule"
+      ruleCollectionName: "aks-fw-ng-network"
+      destinationFqdns: ["*"]
+      destinationAddresses: []
+      destinationPorts: ["*"]
+      protocol : ["TCP","UDP"]
+      action : "Deny"
+      ruleType: "Network"
+  
 
 
   

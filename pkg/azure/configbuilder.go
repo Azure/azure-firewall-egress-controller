@@ -19,17 +19,19 @@ func BuildFirewallConfig(erulesList egressv1.EgressrulesList, erulesSourceAddres
 
 	for _, erule := range erulesList.Items {
 		if len(erulesSourceAddresses[erule.Name]) != 0 {
-			if len(ruleCollections) == 0 || NotFoundRuleCollection(erule, ruleCollections) {
-				ruleCollection := BuildRuleCollection(erule, erulesSourceAddresses)
-				ruleCollections = append(ruleCollections, ruleCollection)
-			} else {
-				for i := 0; i < len(ruleCollections); i++ {
-					ruleCollection := ruleCollections[i].(*n.FirewallPolicyFilterRuleCollection)
-					if erule.Spec.RuleCollectionName == *ruleCollection.Name {
-						rules := *ruleCollection.Rules
-						rule := GetRule(erule, erulesSourceAddresses)
-						rules = append(rules, rule)
-						ruleCollection.Rules = &rules
+			for _, rule := range erule.Spec.Rules {
+				if len(ruleCollections) == 0 || NotFoundRuleCollection(rule, ruleCollections) {
+					ruleCollection := BuildRuleCollection(erule, rule, erulesSourceAddresses)
+					ruleCollections = append(ruleCollections, ruleCollection)
+				} else {
+					for i := 0; i < len(ruleCollections); i++ {
+						ruleCollection := ruleCollections[i].(*n.FirewallPolicyFilterRuleCollection)
+						if rule.RuleCollectionName == *ruleCollection.Name {
+							fwRules := *ruleCollection.Rules
+							fwRule := GetRule(erule, rule, erulesSourceAddresses)
+							fwRules = append(fwRules, fwRule)
+							ruleCollection.Rules = &fwRules
+						}
 					}
 				}
 			}
@@ -39,26 +41,26 @@ func BuildFirewallConfig(erulesList egressv1.EgressrulesList, erulesSourceAddres
 	return &ruleCollections
 }
 
-func NotFoundRuleCollection(erule egressv1.Egressrules, ruleCollections []n.BasicFirewallPolicyRuleCollection) bool {
+func NotFoundRuleCollection(rule egressv1.EgressrulesRulesSpec, ruleCollections []n.BasicFirewallPolicyRuleCollection) bool {
 	for i := 0; i < len(ruleCollections); i++ {
 		ruleCollection := ruleCollections[i].(*n.FirewallPolicyFilterRuleCollection)
-		if erule.Spec.RuleCollectionName == *ruleCollection.Name {
+		if rule.RuleCollectionName == *ruleCollection.Name {
 			return false
 		}
 	}
 	return true
 }
 
-func BuildRuleCollection(erule egressv1.Egressrules, erulesSourceAddresses map[string][]string) n.BasicFirewallPolicyRuleCollection {
+func BuildRuleCollection(erule egressv1.Egressrules, rule egressv1.EgressrulesRulesSpec, erulesSourceAddresses map[string][]string) n.BasicFirewallPolicyRuleCollection {
 	var priority int32
-	if erule.Spec.Action == "Allow" {
-		if erule.Spec.RuleType == "Application" {
+	if rule.Action == "Allow" {
+		if rule.RuleType == "Application" {
 			priority = 210
 		} else {
 			priority = 110
 		}
 	} else {
-		if erule.Spec.RuleType == "Application" {
+		if rule.RuleType == "Application" {
 			priority = 200
 		} else {
 			priority = 100
@@ -66,77 +68,77 @@ func BuildRuleCollection(erule egressv1.Egressrules, erulesSourceAddresses map[s
 	}
 
 	ruleCollection := &n.FirewallPolicyFilterRuleCollection{
-		Name:               to.StringPtr(erule.Spec.RuleCollectionName),
-		Action:             BuildAction(erule.Spec.Action),
+		Name:               to.StringPtr(rule.RuleCollectionName),
+		Action:             BuildAction(rule.Action),
 		Priority:           &priority,
-		RuleCollectionType: GetRuleCollectionType(erule.Spec.RuleType),
-		Rules:              BuildRules(erule, erulesSourceAddresses),
+		RuleCollectionType: GetRuleCollectionType(rule.RuleType),
+		Rules:              BuildRules(erule, rule, erulesSourceAddresses),
 	}
 	return ruleCollection
 }
 
-func BuildRules(erule egressv1.Egressrules, erulesSourceAddresses map[string][]string) *[]n.BasicFirewallPolicyRule {
-	var rules []n.BasicFirewallPolicyRule
-	rule := GetRule(erule, erulesSourceAddresses)
-	rules = append(rules, rule)
-	return &rules
+func BuildRules(erule egressv1.Egressrules, rule egressv1.EgressrulesRulesSpec, erulesSourceAddresses map[string][]string) *[]n.BasicFirewallPolicyRule {
+	var fwRules []n.BasicFirewallPolicyRule
+	fwRule := GetRule(erule, rule, erulesSourceAddresses)
+	fwRules = append(fwRules, fwRule)
+	return &fwRules
 }
 
-func GetRule(erule egressv1.Egressrules, erulesSourceAddresses map[string][]string) n.BasicFirewallPolicyRule {
+func GetRule(erule egressv1.Egressrules, rule egressv1.EgressrulesRulesSpec, erulesSourceAddresses map[string][]string) n.BasicFirewallPolicyRule {
 
 	sourceAddresses := erulesSourceAddresses[erule.Name]
-	var rule n.BasicFirewallPolicyRule
+	var fwRule n.BasicFirewallPolicyRule
 
-	if erule.Spec.RuleType == "Application" {
+	if rule.RuleType == "Application" {
 		targetFqdns := []string{}
 		targetUrls := []string{}
 		var terminateTLS = false
 		destinationAddresses := []string{}
 
-		if erule.Spec.DestinationAddresses != nil {
-			destinationAddresses = erule.Spec.DestinationAddresses
+		if rule.DestinationAddresses != nil {
+			destinationAddresses = rule.DestinationAddresses
 		}
-		if erule.Spec.TargetFqdns != nil {
-			targetFqdns = erule.Spec.TargetFqdns
+		if rule.TargetFqdns != nil {
+			targetFqdns = rule.TargetFqdns
 		}
-		if erule.Spec.TargetUrls != nil {
-			targetUrls = erule.Spec.TargetUrls
+		if rule.TargetUrls != nil {
+			targetUrls = rule.TargetUrls
 		}
 		if len(targetUrls) != 0 {
 			terminateTLS = true
 		}
-		rule := &n.ApplicationRule{
+		fwRule := &n.ApplicationRule{
 			SourceIPGroups:       &(sourceAddresses),
 			DestinationAddresses: &(destinationAddresses),
 			TargetFqdns:          &(targetFqdns),
 			TargetUrls:           &(targetUrls),
 			TerminateTLS:         &(terminateTLS),
-			Protocols:            GetApplicationProtocols(erule.Spec.Protocol),
-			RuleType:             GetRuleType(erule.Spec.RuleType),
-			Name:                 to.StringPtr(erule.Name),
+			Protocols:            GetApplicationProtocols(rule.Protocol),
+			RuleType:             GetRuleType(rule.RuleType),
+			Name:                 to.StringPtr(rule.RuleName),
 		}
-		return rule
-	} else if erule.Spec.RuleType == "Network" {
+		return fwRule
+	} else if rule.RuleType == "Network" {
 		destinationAddresses := []string{}
 		destinationFqdns := []string{}
-		if erule.Spec.DestinationAddresses != nil {
-			destinationAddresses = erule.Spec.DestinationAddresses
+		if rule.DestinationAddresses != nil {
+			destinationAddresses = rule.DestinationAddresses
 		}
-		if erule.Spec.DestinationFqdns != nil {
-			destinationFqdns = erule.Spec.DestinationFqdns
+		if rule.DestinationFqdns != nil {
+			destinationFqdns = rule.DestinationFqdns
 		}
-		rule := &n.Rule{
+		fwRule := &n.Rule{
 			SourceIPGroups:       &(sourceAddresses),
 			DestinationAddresses: &(destinationAddresses),
 			DestinationFqdns:     &(destinationFqdns),
-			DestinationPorts:     &(erule.Spec.DestinationPorts),
-			RuleType:             GetRuleType(erule.Spec.RuleType),
-			IPProtocols:          GetIpProtocols(erule.Spec.Protocol),
-			Name:                 to.StringPtr(erule.Name),
+			DestinationPorts:     &(rule.DestinationPorts),
+			RuleType:             GetRuleType(rule.RuleType),
+			IPProtocols:          GetIpProtocols(rule.Protocol),
+			Name:                 to.StringPtr(rule.RuleName),
 		}
-		return rule
+		return fwRule
 	}
-	return rule
+	return fwRule
 
 }
 
