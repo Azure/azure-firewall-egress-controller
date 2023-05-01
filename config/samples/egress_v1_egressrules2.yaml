@@ -3,35 +3,42 @@ kind: Egressrules
 metadata:
   name: egressrules-sample2
 spec:
-  # TODO(user): Add fields here
-  nodeSelector:
-    - app: "testing"
-  rules:
-    - ruleName: "rule1"
-      ruleCollectionName: "aks-fw-ng"
-      targetFqdns: ["*.yahoo.com"]
-      protocol : ["HTTPS:443"]
-      action : "Deny"
-      ruleType: "Application"
-    - ruleName: "rule2"
-      ruleCollectionName: "aks-fw-ng-allow"
-      targetFqdns: ["*.google.com"]
-      protocol : ["HTTP:800"]
-      action : "Allow"
-      ruleType: "Application"
-    - ruleName: "rule3"
-      ruleCollectionName: "aks-fw-ng-network"
-      destinationFqdns: ["*"]
-      destinationAddresses: []
-      destinationPorts: ["*"]
-      protocol : ["TCP","UDP"]
-      action : "Allow"
-      ruleType: "Network"
-    - ruleName: "rule4"
-      ruleCollectionName: "aks-fw-ng-network-deny"
-      destinationFqdns: ["*"]
-      destinationAddresses: []
-      destinationPorts: ["*"]
-      protocol : ["TCP","UDP"]
-      action : "Deny"
-      ruleType: "Network"
+  egressRules:
+    - name: "erule1"
+      nodeSelector:
+        - app: "testing"
+        - app: "testing1"
+      rules:
+        - ruleName: "rule1"
+          ruleCollectionName: "aks-fw-ng"
+          targetFqdns: ["*.yahoo.com"]
+          protocol : ["HTTPS:443"]
+          action : "Deny"
+          ruleType: "Application"
+        - ruleName: "rule2"
+          ruleCollectionName: "aks-fw-ng-allow"
+          targetFqdns: ["*.google.com"]
+          protocol : ["HTTP:800"]
+          action : "Allow"
+          ruleType: "Application"
+    - name: "erule2"
+      nodeSelector:
+        - nodepool1: "set1"
+        - nodepool2: "set2"
+      rules:
+        - ruleName: "rule3"
+          ruleCollectionName: "aks-fw-ng-network"
+          destinationFqdns: ["*"]
+          destinationAddresses: []
+          destinationPorts: ["*"]
+          protocol : ["TCP","UDP"]
+          action : "Allow"
+          ruleType: "Network"
+        - ruleName: "rule4"
+          ruleCollectionName: "aks-fw-ng-network-deny"
+          destinationFqdns: ["*"]
+          destinationAddresses: []
+          destinationPorts: ["*"]
+          protocol : ["TCP","UDP"]
+          action : "Deny"
+          ruleType: "Network"
