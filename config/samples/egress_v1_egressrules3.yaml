@@ -1,14 +1,17 @@
+# erule1.yaml
 apiVersion: egress.azure-firewall-egress-controller.io/v1
 kind: Egressrules
 metadata:
   name: egressrules-sample3
 spec:
-  nodeSelector:
-    - app: "testing"
-  rules:
-    - ruleName: "erule3-rule"
-      ruleCollectionName: "aks-fw-ng-allow"
-      targetFqdns: ["*.google.com"]
-      protocol : ["HTTP:800"]
-      action : "Allow"
-      ruleType: "Application"
+  egressRules:
+    - name: "erule4"
+      nodeSelector:
+        - app: "testing"
+      rules:
+        - ruleName: "erule3-rule"
+          ruleCollectionName: "aks-fw-ng"
+          targetFqdns: ["*.google.com"]
+          protocol : ["HTTP:800"]
+          action : "Deny"
+          ruleType: "Application"

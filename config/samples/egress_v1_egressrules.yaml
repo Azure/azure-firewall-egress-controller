@@ -3,18 +3,19 @@ kind: Egressrules
 metadata:
   name: egressrules-sample1
 spec:
-  # TODO(user): Add fields here
-  nodeSelector:
-    - app: "nginx0"
-  rules:
-    - ruleName: "erule1-rule"
-      ruleCollectionName: "aks-fw-ng-network"
-      destinationFqdns: ["*"]
-      destinationAddresses: []
-      destinationPorts: ["*"]
-      protocol : ["TCP","UDP"]
-      action : "Deny"
-      ruleType: "Network"
+  egressRules:
+    - name: "erule3"
+      nodeSelector:
+        - app: "nginx0"
+      rules:
+        - ruleName: "erule1-rule"
+          ruleCollectionName: "aks-fw-ng-network"
+          destinationFqdns: ["*"]
+          destinationAddresses: []
+          destinationPorts: ["*"]
+          protocol : ["TCP","UDP"]
+          action : "Deny"
+          ruleType: "Network"
   
 
 

@@ -64,25 +64,24 @@ func (r *Egressrules) ValidateDelete() error {
 }
 
 func (r *Egressrules) validateFields() error {
-	if r.Spec.NodeSelector == nil {
-		return errors.New("Mandatory field NodeSelector missing")
-	}
-	for _, rule := range r.Spec.Rules {
-		if rule.RuleType == "Application" {
-			if rule.TargetFqdns == nil {
-				return errors.New("Target Fqdns field is mandatory field for Application rule")
-			} else if rule.DestinationAddresses != nil || rule.DestinationFqdns != nil || rule.DestinationPorts != nil {
-				return errors.New("Fields DestinationAddresses/DestinationFqdns/DestinationPorts are not supported by Application Rule")
-			}
-		} else {
-			if rule.TargetFqdns != nil || rule.TargetUrls != nil {
-				return errors.New("Fields TargetFqdns/TargetUrls are not supported by Network Rule")
-			} else if rule.DestinationAddresses != nil && rule.DestinationFqdns != nil {
-				return errors.New("Multiple destination types cannot provided")
-			} else if rule.DestinationAddresses == nil && rule.DestinationFqdns == nil {
-				return errors.New("One destination type should be provided")
-			} else if rule.DestinationPorts == nil {
-				return errors.New("Destination port missing")
+	for _, egressrule := range r.Spec.EgressRules {
+		for _, rule := range egressrule.Rules {
+			if rule.RuleType == "Application" {
+				if rule.TargetFqdns == nil {
+					return errors.New("Target Fqdns field is mandatory field for Application rule in")
+				} else if rule.DestinationAddresses != nil || rule.DestinationFqdns != nil || rule.DestinationPorts != nil {
+					return errors.New("Fields DestinationAddresses/DestinationFqdns/DestinationPorts are not supported by Application Rule")
+				}
+			} else {
+				if rule.TargetFqdns != nil || rule.TargetUrls != nil {
+					return errors.New("Fields TargetFqdns/TargetUrls are not supported by Network Rule")
+				} else if rule.DestinationAddresses != nil && rule.DestinationFqdns != nil {
+					return errors.New("Multiple destination types cannot provided")
+				} else if rule.DestinationAddresses == nil && rule.DestinationFqdns == nil {
+					return errors.New("One destination type should be provided")
+				} else if rule.DestinationPorts == nil {
+					return errors.New("Destination port missing")
+				}
 			}
 		}
 	}

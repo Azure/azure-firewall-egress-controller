@@ -35,7 +35,7 @@ type AzClient interface {
 	SetAuthorizer(authorizer autorest.Authorizer)
 	UpdateFirewallPolicy(ctx context.Context, req ctrl.Request) error
 	processRequest(ctx context.Context, req ctrl.Request) error
-	BuildPolicy(erule egressv1.EgressrulesList, erulesSourceAddresses map[string][]string) error
+	BuildPolicy(items egressv1.EgressrulesList, erulesSourceAddresses map[string][]string) error
 	AddTaints(ctx context.Context, req ctrl.Request)
 	RemoveTaints(ctx context.Context, req ctrl.Request)
 }
@@ -131,34 +131,36 @@ func (az *azClient) processRequest(ctx context.Context, req ctrl.Request) (err e
 
 	//check if change in egress rule caused the reconcile request
 	if az.checkIfEgressRuleChanged(req, *erulesList) {
-		for _, erule := range erulesList.Items {
-			var sourceIpGroups []string
-			if erule.Spec.NodeSelector != nil {
-				for _, m := range erule.Spec.NodeSelector {
-					for k, v := range m {
-						sourceAddress := getSourceAddressesByNodeLabels(k, v, *nodeList)
-						IPGroupName := IpGroupNamePrefix + k + v
-						var addressesInIpGroup []*string
-						res, err1 := az.ipGroupClient.Get(az.ctx, az.resourceGroupName, IPGroupName, &a.IPGroupsClientGetOptions{Expand: nil})
-						if err1 == nil {
-							addressesInIpGroup = res.IPGroup.Properties.IPAddresses
-							if *res.Properties.ProvisioningState == a.ProvisioningStateUpdating && pollers[IPGroupName] != nil {
-								_, err = pollers[IPGroupName].PollUntilDone(ctx, nil)
+		for _, item := range erulesList.Items {
+			for _, egressrule := range item.Spec.EgressRules {
+				var sourceIpGroups []string
+				if egressrule.NodeSelector != nil {
+					for _, m := range egressrule.NodeSelector {
+						for k, v := range m {
+							sourceAddress := getSourceAddressesByNodeLabels(k, v, *nodeList)
+							IPGroupName := IpGroupNamePrefix + k + v
+							var addressesInIpGroup []*string
+							res, err1 := az.ipGroupClient.Get(az.ctx, az.resourceGroupName, IPGroupName, &a.IPGroupsClientGetOptions{Expand: nil})
+							if err1 == nil {
+								addressesInIpGroup = res.IPGroup.Properties.IPAddresses
+								if *res.Properties.ProvisioningState == a.ProvisioningStateUpdating && pollers[IPGroupName] != nil {
+									_, err = pollers[IPGroupName].PollUntilDone(ctx, nil)
+								}
 							}
+							if err1 != nil || len(sourceAddress) != len(addressesInIpGroup) || checkIfElementsPresentInArray(sourceAddress, addressesInIpGroup) {
+								poller := az.updateIpGroup(sourceAddress, IPGroupName)
+								pollers[IPGroupName] = poller
+							}
+							res, err1 = az.ipGroupClient.Get(az.ctx, az.resourceGroupName, IPGroupName, &a.IPGroupsClientGetOptions{Expand: nil})
+							if err1 != nil {
+								klog.Error("failed to get the IP Group", err1)
+							}
+							sourceIpGroups = append(sourceIpGroups, *res.IPGroup.ID)
 						}
-						if err1 != nil || len(sourceAddress) != len(addressesInIpGroup) || checkIfElementsPresentInArray(sourceAddress, addressesInIpGroup) {
-							poller := az.updateIpGroup(sourceAddress, IPGroupName)
-							pollers[IPGroupName] = poller
-						}
-						res, err1 = az.ipGroupClient.Get(az.ctx, az.resourceGroupName, IPGroupName, &a.IPGroupsClientGetOptions{Expand: nil})
-						if err1 != nil {
-							klog.Error("failed to get the IP Group", err1)
-						}
-						sourceIpGroups = append(sourceIpGroups, *res.IPGroup.ID)
 					}
 				}
+				erulesSourceAddresses[egressrule.Name] = sourceIpGroups
 			}
-			erulesSourceAddresses[erule.Name] = sourceIpGroups
 		}
 		klog.Info("Source Addresses:", erulesSourceAddresses)
 
@@ -189,15 +191,15 @@ func (az *azClient) processRequest(ctx context.Context, req ctrl.Request) (err e
 
 func (az *azClient) checkIfEgressRuleChanged(req ctrl.Request, erulesList egressv1.EgressrulesList) bool {
 	//check if erule is in current egress rules
-	for _, erule := range erulesList.Items {
-		if erule.Name == req.NamespacedName.Name {
+	for _, item := range erulesList.Items {
+		if item.Name == req.NamespacedName.Name {
 			az.lastEgressRules = erulesList
 			return true
 		}
 	}
 	//check if erule is in last egress rules, it means the erule is deleted.
-	for _, erule := range az.lastEgressRules.Items {
-		if erule.Name == req.NamespacedName.Name {
+	for _, item := range az.lastEgressRules.Items {
+		if item.Name == req.NamespacedName.Name {
 			az.lastEgressRules = erulesList
 			return true
 		}
@@ -220,14 +222,16 @@ func (az *azClient) checkIfRuleExistsOnNode(ctx context.Context, req ctrl.Reques
 	if err := az.client.Get(ctx, req.NamespacedName, node); err != nil {
 		klog.Error(err, "unable to fetch Node")
 	}
-	for _, erule := range erulesList.Items {
-		if erule.Spec.NodeSelector != nil {
-			for _, m := range erule.Spec.NodeSelector {
-				for k, v := range m {
-					if checkIfLabelExists(k, v, node.ObjectMeta.Labels) {
-						IPGroupName := IpGroupNamePrefix + k + v
-						sourceAddress := getSourceAddressesByNodeLabels(k, v, nodeList)
-						rulesExistsOnNodeLabels[IPGroupName] = sourceAddress
+	for _, item := range erulesList.Items {
+		for _, egressrule := range item.Spec.EgressRules {
+			if egressrule.NodeSelector != nil {
+				for _, m := range egressrule.NodeSelector {
+					for k, v := range m {
+						if checkIfLabelExists(k, v, node.ObjectMeta.Labels) {
+							IPGroupName := IpGroupNamePrefix + k + v
+							sourceAddress := getSourceAddressesByNodeLabels(k, v, nodeList)
+							rulesExistsOnNodeLabels[IPGroupName] = sourceAddress
+						}
 					}
 				}
 			}
@@ -244,19 +248,20 @@ func (az *azClient) checkIfRuleExistsOnNode(ctx context.Context, req ctrl.Reques
 			}
 		}
 
-		for _, erule := range erulesList.Items {
-			if erule.Spec.NodeSelector != nil {
-				for _, m := range erule.Spec.NodeSelector {
-					for k, v := range m {
-						if checkIfLabelExists(k, v, changes) {
-							IPGroupName := IpGroupNamePrefix + k + v
-							sourceAddress := getSourceAddressesByNodeLabels(k, v, nodeList)
-							rulesExistsOnNodeLabels[IPGroupName] = sourceAddress
+		for _, item := range erulesList.Items {
+			for _, egressrule := range item.Spec.EgressRules {
+				if egressrule.NodeSelector != nil {
+					for _, m := range egressrule.NodeSelector {
+						for k, v := range m {
+							if checkIfLabelExists(k, v, changes) {
+								IPGroupName := IpGroupNamePrefix + k + v
+								sourceAddress := getSourceAddressesByNodeLabels(k, v, nodeList)
+								rulesExistsOnNodeLabels[IPGroupName] = sourceAddress
+							}
 						}
 					}
 				}
 			}
-
 		}
 	}
 	az.lastNodeLabels[node.Name] = node.ObjectMeta.Labels

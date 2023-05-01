@@ -26,14 +26,22 @@ import (
 
 // EgressrulesSpec defines the desired state of Egressrules
 type EgressrulesSpec struct {
-	SourceAddress []string               `json:"sourceAddress,omitempty"`
-	NodeSelector  []map[string]string    `json:"nodeSelector,omitempty"`
-	Rules         []EgressrulesRulesSpec `json:"rules,omitempty"`
+	EgressRules []AzureFirewallEgressRulesSpec `json:"egressRules,omitempty"`
 }
 
-type EgressrulesRulesSpec struct {
-	RuleCollectionName   string   `json:"ruleCollectionName,omitempty"`
-	RuleName             string   `json:"ruleName,omitempty"`
+type AzureFirewallEgressRulesSpec struct {
+	// +kubebuilder:validation:Required
+	Name string `json:"name"`
+	// +kubebuilder:validation:Required
+	NodeSelector []map[string]string `json:"nodeSelector"`
+	// +kubebuilder:validation:Required
+	Rules []AzureFirewallEgressrulesRulesSpec `json:"rules"`
+}
+
+type AzureFirewallEgressrulesRulesSpec struct {
+	RuleCollectionName string `json:"ruleCollectionName,omitempty"`
+	// +kubebuilder:validation:Required
+	RuleName             string   `json:"ruleName"`
 	DestinationAddresses []string `json:"destinationAddresses,omitempty"`
 	DestinationPorts     []string `json:"destinationPorts,omitempty"`
 	DestinationFqdns     []string `json:"destinationFqdns,omitempty"`

@@ -35,59 +35,67 @@ spec:
           spec:
             description: EgressrulesSpec defines the desired state of Egressrules
             properties:
-              nodeSelector:
-                items:
-                  additionalProperties:
-                    type: string
-                  type: object
-                type: array
-              rules:
+              egressRules:
                 items:
                   properties:
-                    action:
-                      description: FirewallPolicyFilterRuleCollectionActionType enumerates
-                        the values for firewall policy filter rule collection action
-                        type.
+                    name:
                       type: string
-                    destinationAddresses:
+                    nodeSelector:
                       items:
-                        type: string
+                        additionalProperties:
+                          type: string
+                        type: object
                       type: array
-                    destinationFqdns:
+                    rules:
                       items:
-                        type: string
-                      type: array
-                    destinationPorts:
-                      items:
-                        type: string
-                      type: array
-                    protocol:
-                      items:
-                        type: string
-                      type: array
-                    ruleCollectionName:
-                      type: string
-                    ruleName:
-                      type: string
-                    ruleType:
-                      type: string
-                    targetFqdns:
-                      items:
-                        type: string
-                      type: array
-                    targetUrls:
-                      items:
-                        type: string
+                        properties:
+                          action:
+                            description: FirewallPolicyFilterRuleCollectionActionType
+                              enumerates the values for firewall policy filter rule
+                              collection action type.
+                            type: string
+                          destinationAddresses:
+                            items:
+                              type: string
+                            type: array
+                          destinationFqdns:
+                            items:
+                              type: string
+                            type: array
+                          destinationPorts:
+                            items:
+                              type: string
+                            type: array
+                          protocol:
+                            items:
+                              type: string
+                            type: array
+                          ruleCollectionName:
+                            type: string
+                          ruleName:
+                            type: string
+                          ruleType:
+                            type: string
+                          targetFqdns:
+                            items:
+                              type: string
+                            type: array
+                          targetUrls:
+                            items:
+                              type: string
+                            type: array
+                        required:
+                        - action
+                        - protocol
+                        - ruleName
+                        - ruleType
+                        type: object
                       type: array
                   required:
-                  - action
-                  - protocol
-                  - ruleType
+                  - name
+                  - nodeSelector
+                  - rules
                   type: object
-                type: array
-              sourceAddress:
-                items:
-                  type: string
                 type: array
             type: object
           status:
