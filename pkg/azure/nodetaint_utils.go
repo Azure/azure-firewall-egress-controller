@@ -43,7 +43,6 @@ func (az *azClient) RemoveTaints(ctx context.Context, req ctrl.Request) {
 	}
 	if CheckIfTaintExists(node, taint) {
 		var updatedTaints []corev1.Taint
-		klog.Info(node.Spec.Taints)
 		for _, t := range node.Spec.Taints {
 			if t.Key != taint.Key {
 				updatedTaints = append(updatedTaints, t)
@@ -76,6 +75,16 @@ func (az *azClient) WaitForNodeIpGroupUpdate(ctx context.Context, req ctrl.Reque
 func CheckIfTaintExists(node *corev1.Node, taint corev1.Taint) bool {
 	for _, t := range node.Spec.Taints {
 		if t.Key == taint.Key && t.Effect == taint.Effect {
+			return true
+		}
+	}
+	return false
+}
+
+func CheckIfNodeNotReady(node *corev1.Node) bool {
+	conditions := node.Status.Conditions
+	for i := 0; i < len(conditions); i++ {
+		if conditions[i].Type == "Ready" && conditions[i].Status == "False" {
 			return true
 		}
 	}
