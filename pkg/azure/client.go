@@ -103,7 +103,7 @@ func (az *azClient) SetAuthorizer(authorizer autorest.Authorizer) {
 }
 
 func (az *azClient) UpdateFirewallPolicy(ctx context.Context, req ctrl.Request) (err error) {
-	az.queue.AddJob(Job{
+	go az.queue.AddJob(Job{
 		Request:  req,
 		ctx:      ctx,
 		AzClient: az,

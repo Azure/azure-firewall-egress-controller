@@ -7,14 +7,17 @@ package azure
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	//egressv1 "github.com/Azure/azure-firewall-egress-controller/api/v1"
+	"github.com/orcaman/concurrent-map/v2"
 	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
-var jobsInQueue = make(map[string]bool)
+var jobsInQueue = cmap.New[bool]()
+var mutex sync.Mutex
 
 type Queue struct {
 	name   string
@@ -48,15 +51,18 @@ func NewQueue(name string) *Queue {
 
 func (q *Queue) AddJob(job Job) {
 	resourceName := job.Request.NamespacedName.Name
-	if jobsInQueue[resourceName] == false {
-		jobsInQueue[resourceName] = true
-		q.jobs <- job
+
+	alreadyExists, ok := jobsInQueue.Get(resourceName)
+	if ok && alreadyExists {
+		return
 	}
+	jobsInQueue.Set(resourceName, true)
+	q.jobs <- job
 }
 
 func (j Job) Run() error {
 	resourceName := j.Request.NamespacedName.Name
-	jobsInQueue[resourceName] = false
+	jobsInQueue.Set(resourceName, false)
 	klog.Info("Firewall Policy update event triggered for the reconcile request:", j.Request)
 	j.AzClient.processRequest(j.ctx, j.Request)
 	return nil
