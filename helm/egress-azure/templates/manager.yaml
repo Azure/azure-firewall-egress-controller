@@ -53,6 +53,8 @@ spec:
         envFrom:
         - configMapRef:
             name: aks-egress-controller-config-map
+        - secretRef:
+            name: aks-egress-controller-secret
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:

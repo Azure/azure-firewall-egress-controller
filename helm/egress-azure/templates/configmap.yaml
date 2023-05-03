@@ -8,9 +8,6 @@ metadata:
     app: egress-azure
     chart: {{ .Chart.Name }}-{{ .Chart.Version }}
 data:
-  AZURE_TENANT_ID: {{ .Values.auth.tenantId | quote }}
-  AZURE_CLIENT_ID: {{ .Values.auth.clientId | quote }}
-  AZURE_CLIENT_SECRET: {{ .Values.auth.clientSecret | quote }}
 {{ if .Values.fw.policyResourceID }}
   FW_POLICY_RESOURCE_ID: {{ .Values.fw.policyResourceID | quote }}
 {{ else }}
