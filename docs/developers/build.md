@@ -10,18 +10,18 @@ AFEC monitors a subset of Kubernetes Resources and translates them to Azure Fire
 - [Install Azure Firewall Egress Controller using Helm](#install-azure-firewall-egress-controller-as-a-helm-chart)
 
 ## Prerequisites
-This documents assumes you already have the following tools and infrastructure installed:
-- Azure Firewall as the next hop to the AKS cluster. Please follow [this](https://learn.microsoft.com/en-us/azure/aks/limit-egress-traffic) documentation for the setup. Make sure to add additional rules in the firewall to allow node <-> api-server communication and also to allow access to images in the Microsoft Container Registry(MCR).
-- Create an Active Directory Service Principal.
-- If you are using [Azure Cloud Shell](https://shell.azure.com/) it has all the tools already installed. Launch your shell from shell.azure.com or by clicking the link: [Launch Azure Cloud Shell](https://shell.azure.com). If you choose to use another environment, please ensure the following command line tools are installed:
-  1. `az` - Azure CLI: [installation instructions](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest)
-  2. `kubectl` - Kubernetes command-line tool: [installation instructions](https://kubernetes.io/docs/tasks/tools/install-kubectl)
-  3. `helm` (version 3.7 or later) - Kubernetes package manager: [installation instructions](https://github.com/helm/helm/releases/latest)
+This documents assumes you already have the following tools and infrastructure installed:  
+- Azure Firewall as the next hop to the AKS cluster. Please follow [this](https://learn.microsoft.com/en-us/azure/aks/limit-egress-traffic) documentation for the setup. Make sure to add additional rules in the firewall to allow node <-> api-server communication and also to allow access to images in the Microsoft Container Registry(MCR).  
+- Create an Active Directory Service Principal.  
+- If you are using [Azure Cloud Shell](https://shell.azure.com/) it has all the tools already installed. Launch your shell from shell.azure.com or by clicking the link: [Launch Azure Cloud Shell](https://shell.azure.com). If you choose to use another environment, please ensure the following command line tools are installed:  
+  1. `az` - Azure CLI: [installation instructions](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest)  
+  2. `kubectl` - Kubernetes command-line tool: [installation instructions](https://kubernetes.io/docs/tasks/tools/install-kubectl)  
+  3. `helm` (version 3.7 or later) - Kubernetes package manager: [installation instructions](https://github.com/helm/helm/releases/latest)  
 
 ### Setup Kubernetes Credentials
 
 For the following steps we need setup [kubectl](https://kubectl.docs.kubernetes.io/) command,
-which we will use to connect to our new Kubernetes cluster. We will use `az` CLI to obtain credentials for Kubernetes.
+which we will use to connect to our new Kubernetes cluster. We will use `az` CLI to obtain credentials for Kubernetes.  
 
 Get credentials for your newly deployed AKS ([read more](https://docs.microsoft.com/en-us/azure/aks/kubernetes-walkthrough#connect-to-the-cluster)):
 
