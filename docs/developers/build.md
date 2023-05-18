@@ -1,13 +1,12 @@
-# AFEC Deployment
+# Azure Firewall Controller Deployment Workflow
 
-The Azure Firewall Egress Controller (AFEC) is a pod within your Kubernetes cluster.
-AFEC monitors a subset of Kubernetes Resources and translates them to Azure Firewall specific configuration and applies to the  [Azure Resource Manager (ARM)](https://docs.microsoft.com/en-us/azure/azure-resource-manager/resource-group-overview).
+The Azure Firewall Controller is a pod within your Kubernetes cluster which monitors a subset of Kubernetes Resources and translates them to Azure Firewall specific configuration and applies to the  [Azure Resource Manager (ARM)](https://docs.microsoft.com/en-us/azure/azure-resource-manager/resource-group-overview).
 
 ### Outline:
 - [Prerequisites](#prerequisites)
 - [Azure Resource Manager Authentication (ARM)](#azure-resource-manager-authentication)
     - Option 1: [Using a Service Principal](#using-a-service-principal)
-- [Install Azure Firewall Egress Controller using Helm](#install-azure-firewall-egress-controller-as-a-helm-chart)
+- [Install Azure Firewall Controller using Helm](#install-azure-firewall-controller-as-a-helm-chart)
 
 ## Prerequisites
 This documents assumes you already have the following tools and infrastructure installed:  
@@ -54,7 +53,7 @@ AFEC access to ARM can be possible by creating service principal. Follow the ste
 
   Please record the appId (`<azureClientId>`), password(`<azureClientSecret>`), and tenant(`<azureTenantId>`) values - these will be used in the following steps to authenticate to azure.
 
-## Install Azure Firewall Egress Controller as a Helm Chart
+## Install Azure Firewall Controller as a Helm Chart
 [Helm](https://docs.microsoft.com/en-us/azure/aks/kubernetes-helm) is a package manager for
 Kubernetes. This document uses Helm version 3.7 or later. We will leverage it to install the `azure-firewall-egress-controller` package.
 Use [Cloud Shell](https://shell.azure.com/) to install install the AFEC Helm package:
@@ -62,7 +61,7 @@ Use [Cloud Shell](https://shell.azure.com/) to install install the AFEC Helm pac
 1. Install Helm chart
 
 ```console
-helm install [RELEASE_NAME] oci://mcr.microsoft.com/azfw/helmchart/afec --version [VERSION] \
+helm install [RELEASE_NAME] oci://mcr.microsoft.com/azfw/helmchart/afec --version 0.1.0 \
          --debug \
          --set fw.policyResourceId=<fwpolicyResourceId> \
          --set fw.policyResourceGroup=<fwpolicyResourceGroup> \
@@ -73,6 +72,7 @@ helm install [RELEASE_NAME] oci://mcr.microsoft.com/azfw/helmchart/afec --versio
          --set auth.clientId=<azureClientId> \
          --set auth.clientSecret=<azureClientSecret>
 ```
+`[RELEASE_NAME]` can be any chosen name.<br>
 `<azureTenantId>` and `<azureClientId>` and `<azureClientSecret>` are values that were created in the previous section.
 If a Firewall Policy Resource Id is provided, individual fields of fwpolicySubscriptionId, fwpolicyResourceGroup and fwPolicyName will be ignored
 
