@@ -3,7 +3,7 @@
 1. Install Helm chart
 
 ```console
-helm install [RELEASE_NAME] oci://mcr.microsoft.com/azfw/helmchart/afec --version [VERSION] \
+helm install [RELEASE_NAME] oci://mcr.microsoft.com/azfw/helmchart/afec --version 0.1.0 \
          --debug \
          --set fw.fwResourceGroup=<resourceGroup> \
          --set fw.subscriptionId=<subscriptionId> \
