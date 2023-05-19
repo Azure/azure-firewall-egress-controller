@@ -17,6 +17,7 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/Azure/go-autorest/autorest/to"
+	"github.com/orcaman/concurrent-map/v2"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -28,6 +29,7 @@ const (
 )
 
 var pollers = make(map[string]*runtime.Poller[a.IPGroupsClientCreateOrUpdateResponse])
+var lastNodeLabels = cmap.New[map[string]string]()
 var firewallPolicyLoc = ""
 
 // AzClient is an interface for client to Azure
@@ -52,7 +54,6 @@ type azClient struct {
 	fwPolicyRuleCollectionGroupName string
 	queue                           *Queue
 	client                          client.Client
-	lastNodeLabels                  map[string]map[string]string
 	lastEgressRules                 egressv1.EgressrulesList
 
 	ctx context.Context
@@ -85,7 +86,6 @@ func NewAzClient(subscriptionID string, resourceGroupName string, fwPolicyName s
 		fwPolicyRuleCollectionGroupName: fwPolicyRuleCollectionGroupName,
 		queue:                           NewQueue("policyBuilder"),
 		client:                          client,
-		lastNodeLabels:                  make(map[string]map[string]string),
 		lastEgressRules:                 egressv1.EgressrulesList{},
 
 		ctx: context.Background(),
@@ -103,16 +103,50 @@ func (az *azClient) SetAuthorizer(authorizer autorest.Authorizer) {
 }
 
 func (az *azClient) UpdateFirewallPolicy(ctx context.Context, req ctrl.Request) (err error) {
-	go az.queue.AddJob(Job{
-		Request:  req,
-		ctx:      ctx,
-		AzClient: az,
-	})
+	az.checkIfJobToBeAddedToChannel(ctx, req)
 
 	if firewallPolicyLoc == "" {
 		az.fetchFirewallPolicyLocation()
 	}
 
+	return
+}
+
+func (az *azClient) checkIfJobToBeAddedToChannel(ctx context.Context, req ctrl.Request) (err error) {
+	erulesList := &egressv1.EgressrulesList{}
+	if err := az.client.List(ctx, erulesList, []client.ListOption{}...); err != nil {
+		return err
+	}
+	nodeList := &corev1.NodeList{}
+	if err := az.client.List(ctx, nodeList, []client.ListOption{}...); err != nil {
+		return err
+	}
+
+	if az.checkIfNodeChanged(req, *nodeList) {
+		node := &corev1.Node{}
+		if err := az.client.Get(ctx, req.NamespacedName, node); err != nil {
+			klog.Error(err, "unable to fetch Node")
+		}
+		newNodeSelector := node.ObjectMeta.Labels
+		oldNodeSelector, _ := lastNodeLabels.Get(node.Name)
+		if checkIfRuleExistsOnNode(*node, *erulesList, newNodeSelector, oldNodeSelector) {
+			az.queue.AddJob(Job{
+				Request:  req,
+				ctx:      ctx,
+				AzClient: az,
+			})
+		} else {
+			lastNodeLabels.Set(node.Name, node.ObjectMeta.Labels)
+			az.RemoveTaints(ctx, req)
+
+		}
+	} else if az.checkIfEgressRuleChanged(req, *erulesList) {
+		az.queue.AddJob(Job{
+			Request:  req,
+			ctx:      ctx,
+			AzClient: az,
+		})
+	}
 	return
 }
 
@@ -130,7 +164,26 @@ func (az *azClient) processRequest(ctx context.Context, req ctrl.Request) (err e
 	}
 
 	//check if change in egress rule caused the reconcile request
-	if az.checkIfEgressRuleChanged(req, *erulesList) {
+	if az.checkIfNodeChanged(req, *nodeList) {
+		var node_pollers = make(map[string]*runtime.Poller[a.IPGroupsClientCreateOrUpdateResponse])
+		ruleExistsOnLabels := az.fetchNodeIps(ctx, req, *erulesList, *nodeList)
+		for IPGroupName, address := range ruleExistsOnLabels {
+			var addressesInIpGroup []*string
+			res, err1 := az.ipGroupClient.Get(az.ctx, az.resourceGroupName, IPGroupName, &a.IPGroupsClientGetOptions{Expand: nil})
+			if err1 == nil {
+				addressesInIpGroup = res.IPGroup.Properties.IPAddresses
+				if *res.Properties.ProvisioningState == a.ProvisioningStateUpdating && pollers[IPGroupName] != nil {
+					_, err = pollers[IPGroupName].PollUntilDone(ctx, nil)
+				}
+			}
+			if len(address) != len(addressesInIpGroup) || checkIfElementsPresentInArray(address, addressesInIpGroup) {
+				poller := az.updateIpGroup(address, IPGroupName)
+				pollers[IPGroupName] = poller
+				node_pollers[IPGroupName] = poller
+			}
+		}
+		go az.WaitForNodeIpGroupUpdate(ctx, req, node_pollers)
+	} else {
 		for _, item := range erulesList.Items {
 			for _, egressrule := range item.Spec.EgressRules {
 				var sourceIpGroups []string
@@ -165,26 +218,6 @@ func (az *azClient) processRequest(ctx context.Context, req ctrl.Request) (err e
 		klog.Info("Source Addresses:", erulesSourceAddresses)
 
 		az.BuildPolicy(*erulesList, erulesSourceAddresses)
-
-	} else if checkIfNodeChanged(req, *nodeList) {
-		var node_pollers = make(map[string]*runtime.Poller[a.IPGroupsClientCreateOrUpdateResponse])
-		ruleExistsOnLabels := az.checkIfRuleExistsOnNode(ctx, req, *erulesList, *nodeList)
-		for IPGroupName, address := range ruleExistsOnLabels {
-			var addressesInIpGroup []*string
-			res, err1 := az.ipGroupClient.Get(az.ctx, az.resourceGroupName, IPGroupName, &a.IPGroupsClientGetOptions{Expand: nil})
-			if err1 == nil {
-				addressesInIpGroup = res.IPGroup.Properties.IPAddresses
-				if *res.Properties.ProvisioningState == a.ProvisioningStateUpdating && pollers[IPGroupName] != nil {
-					_, err = pollers[IPGroupName].PollUntilDone(ctx, nil)
-				}
-			}
-			if len(address) != len(addressesInIpGroup) || checkIfElementsPresentInArray(address, addressesInIpGroup) {
-				poller := az.updateIpGroup(address, IPGroupName)
-				pollers[IPGroupName] = poller
-				node_pollers[IPGroupName] = poller
-			}
-		}
-		go az.WaitForNodeIpGroupUpdate(ctx, req, node_pollers)
 	}
 	return
 }
@@ -207,7 +240,7 @@ func (az *azClient) checkIfEgressRuleChanged(req ctrl.Request, erulesList egress
 	return false
 }
 
-func checkIfNodeChanged(req ctrl.Request, nodeList corev1.NodeList) bool {
+func (az *azClient) checkIfNodeChanged(req ctrl.Request, nodeList corev1.NodeList) bool {
 	for _, node := range nodeList.Items {
 		if node.Name == req.NamespacedName.Name {
 			return true
@@ -216,7 +249,7 @@ func checkIfNodeChanged(req ctrl.Request, nodeList corev1.NodeList) bool {
 	return false
 }
 
-func (az *azClient) checkIfRuleExistsOnNode(ctx context.Context, req ctrl.Request, erulesList egressv1.EgressrulesList, nodeList corev1.NodeList) map[string][]*string {
+func (az *azClient) fetchNodeIps(ctx context.Context, req ctrl.Request, erulesList egressv1.EgressrulesList, nodeList corev1.NodeList) map[string][]*string {
 	var rulesExistsOnNodeLabels = make(map[string][]*string)
 	node := &corev1.Node{}
 	if err := az.client.Get(ctx, req.NamespacedName, node); err != nil {
@@ -237,13 +270,13 @@ func (az *azClient) checkIfRuleExistsOnNode(ctx context.Context, req ctrl.Reques
 			}
 		}
 	}
-	if !reflect.DeepEqual(node.ObjectMeta.Labels, az.lastNodeLabels[node.Name]) {
+	oldNodeSelector, _ := lastNodeLabels.Get(node.Name)
+	if !reflect.DeepEqual(node.ObjectMeta.Labels, oldNodeSelector) {
 		// Node selector has been modified, get the changes
-		oldSelector := az.lastNodeLabels[node.Name]
-		newSelector := node.ObjectMeta.Labels
+		newNodeSelector := node.ObjectMeta.Labels
 		changes := make(map[string]string)
-		for key, value := range oldSelector {
-			if newSelector[key] != value {
+		for key, value := range oldNodeSelector {
+			if newNodeSelector[key] != value {
 				changes[key] = value
 			}
 		}
@@ -264,7 +297,7 @@ func (az *azClient) checkIfRuleExistsOnNode(ctx context.Context, req ctrl.Reques
 			}
 		}
 	}
-	az.lastNodeLabels[node.Name] = node.ObjectMeta.Labels
+	lastNodeLabels.Set(node.Name, node.ObjectMeta.Labels)
 	return rulesExistsOnNodeLabels
 }
 

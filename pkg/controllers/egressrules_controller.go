@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"reflect"
 
 	egressv1 "github.com/Azure/azure-firewall-egress-controller/pkg/api/v1"
 	a "github.com/Azure/azure-firewall-egress-controller/pkg/azure"
@@ -25,8 +26,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
@@ -59,7 +62,7 @@ func (r *EgressrulesReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	node := &corev1.Node{}
 	err := r.Get(ctx, req.NamespacedName, node)
 	if (err != nil && req.NamespacedName.Namespace != "kube-system") || (err == nil && !a.CheckIfNodeNotReady(node)) {
-		r.AzClient.UpdateFirewallPolicy(ctx, req)
+		go r.AzClient.UpdateFirewallPolicy(ctx, req)
 	} else if a.CheckIfNodeNotReady(node) {
 		go r.AzClient.AddTaints(ctx, req)
 	}
@@ -72,5 +75,22 @@ func (r *EgressrulesReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&egressv1.Egressrules{}).
 		Watches(&source.Kind{Type: &corev1.Node{}}, &handler.EnqueueRequestForObject{}).
+		WithEventFilter(predicate.Funcs{
+			UpdateFunc: func(e event.UpdateEvent) bool {
+				if _, ok := e.ObjectNew.(*corev1.Node); ok {
+					oldObj := e.ObjectOld.(*corev1.Node)
+					newObj := e.ObjectNew.(*corev1.Node)
+
+					labelChanged := !reflect.DeepEqual(oldObj.GetLabels(), newObj.GetLabels())
+					ipChanged := oldObj.Status.Addresses[0].Address != newObj.Status.Addresses[0].Address
+					// Only trigger the reconciler if a specific field has changed.
+					return labelChanged || ipChanged
+				}
+				return true
+			},
+			GenericFunc: func(event.GenericEvent) bool {
+				return false
+			},
+		}).
 		Complete(r)
 }
