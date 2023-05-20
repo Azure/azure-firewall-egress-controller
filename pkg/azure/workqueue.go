@@ -8,7 +8,6 @@ package azure
 import (
 	"context"
 	"sync"
-	"time"
 
 	//egressv1 "github.com/Azure/azure-firewall-egress-controller/api/v1"
 	"github.com/orcaman/concurrent-map/v2"
@@ -63,7 +62,7 @@ func (q *Queue) AddJob(job Job) {
 func (j Job) Run() error {
 	resourceName := j.Request.NamespacedName.Name
 	jobsInQueue.Set(resourceName, false)
-	klog.Info("Firewall Policy update event triggered for the reconcile request:", j.Request)
+	klog.Info("Processing request: ", j.Request)
 	j.AzClient.processRequest(j.ctx, j.Request)
 	return nil
 }
@@ -83,7 +82,6 @@ func (w *Worker) DoWork() bool {
 			return true
 		// if job received.
 		case job := <-w.Queue.jobs:
-			time.Sleep(5 * time.Second)
 			err := job.Run()
 			if err != nil {
 				klog.Error("Err in DoWork ... :", err)

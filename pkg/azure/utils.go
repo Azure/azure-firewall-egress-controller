@@ -6,6 +6,9 @@
 package azure
 
 import (
+	"reflect"
+
+	egressv1 "github.com/Azure/azure-firewall-egress-controller/pkg/api/v1"
 	"github.com/Azure/go-autorest/autorest/to"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -57,4 +60,36 @@ func getSourceAddressesByNodeLabels(k string, v string, nodeList corev1.NodeList
 		}
 	}
 	return sourceAddresses
+}
+
+func checkIfRuleExistsOnNode(node corev1.Node, erulesList egressv1.EgressrulesList, newNodeSelector map[string]string, oldNodeSelector map[string]string) bool {
+	for _, item := range erulesList.Items {
+		for _, egressrule := range item.Spec.EgressRules {
+			if egressrule.NodeSelector != nil {
+				for _, m := range egressrule.NodeSelector {
+					for k, v := range m {
+						if checkIfLabelExists(k, v, newNodeSelector) {
+							return true
+						}
+					}
+				}
+			}
+		}
+	}
+	if !reflect.DeepEqual(newNodeSelector, oldNodeSelector) {
+		for _, item := range erulesList.Items {
+			for _, egressrule := range item.Spec.EgressRules {
+				if egressrule.NodeSelector != nil {
+					for _, m := range egressrule.NodeSelector {
+						for k, v := range m {
+							if checkIfLabelExists(k, v, oldNodeSelector) {
+								return true
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	return false
 }

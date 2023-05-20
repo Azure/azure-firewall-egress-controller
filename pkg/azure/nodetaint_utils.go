@@ -14,6 +14,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var taint = corev1.Taint{
@@ -28,10 +29,13 @@ func (az *azClient) AddTaints(ctx context.Context, req ctrl.Request) {
 		klog.Error(err, "unable to fetch Node")
 	}
 	if !CheckIfTaintExists(node, taint) {
+		patch := client.MergeFrom(node.DeepCopy())
 		node.Spec.Taints = append(node.Spec.Taints, taint)
-		err := az.client.Update(ctx, node)
+		err := az.client.Patch(ctx, node, patch)
 		if err == nil {
 			klog.Info("Taints added on node: ", node.Name)
+		} else {
+			klog.Info("Error adding the taints", err)
 		}
 	}
 }
@@ -48,10 +52,14 @@ func (az *azClient) RemoveTaints(ctx context.Context, req ctrl.Request) {
 				updatedTaints = append(updatedTaints, t)
 			}
 		}
+
+		patch := client.MergeFrom(node.DeepCopy())
 		node.Spec.Taints = updatedTaints
-		err := az.client.Update(ctx, node)
+		err := az.client.Patch(ctx, node, patch)
 		if err == nil {
 			klog.Info("Taints removed on node: ", node.Name)
+		} else {
+			klog.Info("Error removing the taints", err)
 		}
 	}
 }
@@ -82,9 +90,8 @@ func CheckIfTaintExists(node *corev1.Node, taint corev1.Taint) bool {
 }
 
 func CheckIfNodeNotReady(node *corev1.Node) bool {
-	conditions := node.Status.Conditions
-	for i := 0; i < len(conditions); i++ {
-		if conditions[i].Type == "Ready" && conditions[i].Status == "False" {
+	for _, t := range node.Spec.Taints {
+		if (t.Key == "node.cloudprovider.kubernetes.io/uninitialized" || t.Key == "node.kubernetes.io/not-ready") && t.Effect == corev1.TaintEffectNoSchedule {
 			return true
 		}
 	}
