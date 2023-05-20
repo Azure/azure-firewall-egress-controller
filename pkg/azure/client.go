@@ -8,6 +8,7 @@ package azure
 import (
 	"context"
 	"reflect"
+	"time"
 
 	egressv1 "github.com/Azure/azure-firewall-egress-controller/pkg/api/v1"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
@@ -91,6 +92,10 @@ func NewAzClient(subscriptionID string, resourceGroupName string, fwPolicyName s
 		ctx: context.Background(),
 	}
 
+	if firewallPolicyLoc == "" {
+		az.fetchFirewallPolicyLocation()
+	}
+
 	worker := NewWorker(az.queue)
 	go worker.DoWork()
 
@@ -104,10 +109,6 @@ func (az *azClient) SetAuthorizer(authorizer autorest.Authorizer) {
 
 func (az *azClient) UpdateFirewallPolicy(ctx context.Context, req ctrl.Request) (err error) {
 	az.checkIfJobToBeAddedToChannel(ctx, req)
-
-	if firewallPolicyLoc == "" {
-		az.fetchFirewallPolicyLocation()
-	}
 
 	return
 }
@@ -151,6 +152,8 @@ func (az *azClient) checkIfJobToBeAddedToChannel(ctx context.Context, req ctrl.R
 }
 
 func (az *azClient) processRequest(ctx context.Context, req ctrl.Request) (err error) {
+	processEventStart := time.Now()
+
 	var erulesSourceAddresses = make(map[string][]string)
 	erulesList := &egressv1.EgressrulesList{}
 	listOpts := []client.ListOption{}
@@ -173,6 +176,7 @@ func (az *azClient) processRequest(ctx context.Context, req ctrl.Request) (err e
 			if err1 == nil {
 				addressesInIpGroup = res.IPGroup.Properties.IPAddresses
 				if *res.Properties.ProvisioningState == a.ProvisioningStateUpdating && pollers[IPGroupName] != nil {
+					klog.Info("waiting for the IP group update to complete......")
 					_, err = pollers[IPGroupName].PollUntilDone(ctx, nil)
 				}
 			}
@@ -180,6 +184,8 @@ func (az *azClient) processRequest(ctx context.Context, req ctrl.Request) (err e
 				poller := az.updateIpGroup(address, IPGroupName)
 				pollers[IPGroupName] = poller
 				node_pollers[IPGroupName] = poller
+			} else {
+				klog.Info("IP Group has NOT changed! No need to connect to ARM.")
 			}
 		}
 		go az.WaitForNodeIpGroupUpdate(ctx, req, node_pollers)
@@ -215,10 +221,11 @@ func (az *azClient) processRequest(ctx context.Context, req ctrl.Request) (err e
 				erulesSourceAddresses[egressrule.Name] = sourceIpGroups
 			}
 		}
-		klog.Info("Source Addresses:", erulesSourceAddresses)
 
 		az.BuildPolicy(*erulesList, erulesSourceAddresses)
 	}
+	duration := time.Now().Sub(processEventStart)
+	klog.Infof("Completed last event loop run in: %+v", duration)
 	return
 }
 
@@ -327,15 +334,20 @@ func (az *azClient) BuildPolicy(erulesList egressv1.EgressrulesList, erulesSourc
 		}),
 	}
 
+	configJSON, _ := dumpSanitizedJSON(fwRuleCollectionGrpObj)
+	klog.Infof("Generated config:\n%s", string(configJSON))
+
+	klog.Info("BEGIN firewall policy deployment")
+
 	fwRUleCollectionGrp, err1 := az.fwPolicyRuleCollectionGroupClient.CreateOrUpdate(az.ctx, string(az.resourceGroupName), az.fwPolicyName, az.fwPolicyRuleCollectionGroupName, *fwRuleCollectionGrpObj)
 
 	err1 = fwRUleCollectionGrp.WaitForCompletionRef(az.ctx, az.fwPolicyRuleCollectionGroupClient.BaseClient.Client)
 	if err1 != nil {
-		klog.Error("Error updating the Firewall Policy: ", err1, "\n\n")
+		klog.Error("Error updating the Firewall Policy: ", err1)
 		return
 	}
 
-	klog.Info("Firewall Policy update successful.....\n\n")
+	klog.Info("Applied generated firewall policy configuration.....")
 	return
 }
 
