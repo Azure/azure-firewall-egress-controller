@@ -11,6 +11,7 @@ spec:
       rules:
         - ruleName: "erule3-rule"
           ruleCollectionName: "aks-fw-ng"
+          priority: 200
           targetFqdns: ["*.google.com"]
           protocol : ["HTTP:800"]
           action : "Deny"
