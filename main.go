@@ -96,7 +96,7 @@ func main() {
 
 	env := environment.GetEnv()
 
-	azClient := azure.NewAzClient(env.SubscriptionID, env.ResourceGroupName, env.FwPolicyName, env.FwPolicyRuleCollectionGroupName, env.ClientID, mgr.GetClient())
+	azClient := azure.NewAzClient(env.SubscriptionID, env.ResourceGroupName, env.FwPolicyName, env.FwPolicyRuleCollectionGroupName, env.FwPolicyRuleCollectionGroupPriority, env.ClientID, mgr.GetClient())
 
 	var authorizer autorest.Authorizer
 	authorizer, err = auth.NewAuthorizerFromEnvironment()
@@ -104,7 +104,7 @@ func main() {
 
 	firewallPolicyLoc := azClient.FetchFirewallPolicyLocation()
 
-	klog.Infof("Azure Firewall Policy Details: Subscription=\"%s\" Resource Group=\"%s\" Location=\"%s\" Name=\"%s\" Rule Collection Group=\"%s\"", env.SubscriptionID, env.ResourceGroupName, firewallPolicyLoc, env.FwPolicyName, env.FwPolicyRuleCollectionGroupName)
+	klog.Infof("Azure Firewall Policy Details: Subscription=\"%s\" Resource Group=\"%s\" Location=\"%s\" Name=\"%s\" Rule Collection Group=\"%s\" Rule Collection Group Priority=\"%d\"", env.SubscriptionID, env.ResourceGroupName, firewallPolicyLoc, env.FwPolicyName, env.FwPolicyRuleCollectionGroupName, env.FwPolicyRuleCollectionGroupPriority)
 
 	if err = (&controllers.EgressrulesReconciler{
 		Client:   mgr.GetClient(),

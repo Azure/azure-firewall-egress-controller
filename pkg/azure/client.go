@@ -49,20 +49,21 @@ type azClient struct {
 	ipGroupClient                     *a.IPGroupsClient
 	clientID                          string
 
-	subscriptionID                  string
-	resourceGroupName               string
-	fwPolicyName                    string
-	fwPolicyRuleCollectionGroupName string
-	firewallPolicyLoc               string
-	queue                           *Queue
-	client                          client.Client
-	lastEgressRules                 egressv1.EgressrulesList
+	subscriptionID                      string
+	resourceGroupName                   string
+	fwPolicyName                        string
+	fwPolicyRuleCollectionGroupName     string
+	fwPolicyRuleCollectionGroupPriority int32
+	firewallPolicyLoc                   string
+	queue                               *Queue
+	client                              client.Client
+	lastEgressRules                     egressv1.EgressrulesList
 
 	ctx context.Context
 }
 
 // NewAzClient returns an Azure Client
-func NewAzClient(subscriptionID string, resourceGroupName string, fwPolicyName string, fwPolicyRuleCollectionGroupName string, clientID string, client client.Client) AzClient {
+func NewAzClient(subscriptionID string, resourceGroupName string, fwPolicyName string, fwPolicyRuleCollectionGroupName string, fwPolicyRuleCollectionGroupPriority int32, clientID string, client client.Client) AzClient {
 	settings, err := auth.GetSettingsFromEnvironment()
 	if err != nil {
 		return nil
@@ -82,14 +83,15 @@ func NewAzClient(subscriptionID string, resourceGroupName string, fwPolicyName s
 		ipGroupClient:                     ipGroupClient,
 		clientID:                          clientID,
 
-		subscriptionID:                  subscriptionID,
-		resourceGroupName:               resourceGroupName,
-		fwPolicyName:                    fwPolicyName,
-		fwPolicyRuleCollectionGroupName: fwPolicyRuleCollectionGroupName,
-		firewallPolicyLoc:               "",
-		queue:                           NewQueue("policyBuilder"),
-		client:                          client,
-		lastEgressRules:                 egressv1.EgressrulesList{},
+		subscriptionID:                      subscriptionID,
+		resourceGroupName:                   resourceGroupName,
+		fwPolicyName:                        fwPolicyName,
+		fwPolicyRuleCollectionGroupName:     fwPolicyRuleCollectionGroupName,
+		fwPolicyRuleCollectionGroupPriority: fwPolicyRuleCollectionGroupPriority,
+		firewallPolicyLoc:                   "",
+		queue:                               NewQueue("policyBuilder"),
+		client:                              client,
+		lastEgressRules:                     egressv1.EgressrulesList{},
 
 		ctx: context.Background(),
 	}
@@ -327,7 +329,7 @@ func (az *azClient) BuildPolicy(erulesList egressv1.EgressrulesList, erulesSourc
 
 	fwRuleCollectionGrpObj := &n.FirewallPolicyRuleCollectionGroup{
 		FirewallPolicyRuleCollectionGroupProperties: &(n.FirewallPolicyRuleCollectionGroupProperties{
-			Priority:        to.Int32Ptr(400),
+			Priority:        to.Int32Ptr(az.fwPolicyRuleCollectionGroupPriority),
 			RuleCollections: ruleCollections,
 		}),
 	}
