@@ -37,6 +37,7 @@ import (
 	"github.com/Azure/azure-firewall-egress-controller/pkg/controllers"
 	environment "github.com/Azure/azure-firewall-egress-controller/pkg/environment"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
+	"k8s.io/klog/v2"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -95,11 +96,15 @@ func main() {
 
 	env := environment.GetEnv()
 
-	azClient := azure.NewAzClient(env.SubscriptionID, env.ResourceGroupName, env.FwPolicyName, env.FwPolicyRuleCollectionGroupName, env.ClientID, mgr.GetClient())
+	azClient := azure.NewAzClient(env.SubscriptionID, env.ResourceGroupName, env.FwPolicyName, env.FwPolicyRuleCollectionGroupName, env.FwPolicyRuleCollectionGroupPriority, env.ClientID, mgr.GetClient())
 
 	var authorizer autorest.Authorizer
 	authorizer, err = auth.NewAuthorizerFromEnvironment()
 	azClient.SetAuthorizer(authorizer)
+
+	firewallPolicyLoc := azClient.FetchFirewallPolicyLocation()
+
+	klog.Infof("Azure Firewall Policy Details: Subscription=\"%s\" Resource Group=\"%s\" Location=\"%s\" Name=\"%s\" Rule Collection Group=\"%s\" Rule Collection Group Priority=\"%d\"", env.SubscriptionID, env.ResourceGroupName, firewallPolicyLoc, env.FwPolicyName, env.FwPolicyRuleCollectionGroupName, env.FwPolicyRuleCollectionGroupPriority)
 
 	if err = (&controllers.EgressrulesReconciler{
 		Client:   mgr.GetClient(),

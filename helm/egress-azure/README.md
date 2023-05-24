@@ -9,6 +9,7 @@ helm install [RELEASE_NAME] oci://mcr.microsoft.com/azfw/helmchart/afec --versio
          --set fw.subscriptionId=<subscriptionId> \
          --set fw.policyName=<azureFirewallPolicy> \
          --set fw.policyRuleCollectionGroup=<azureFirewallRuleCollectiongroup> \
+         --set fw.policyRuleCollectionGroupPriority=<azureFirewallRuleCollectiongroupPriority> \
          --set auth.tenantId=<azureTenantId> \
          --set auth.clientId=<azureClientId> \
          --set auth.clientSecret=<azureClientSecret>
@@ -23,6 +24,7 @@ helm upgrade [RELEASE_NAME] afec-helm \
          --set fw.subscriptionId=<subscriptionId> \
          --set fw.policyName=<azureFirewallPolicy> \
          --set fw.policyRuleCollectionGroup=<azureFirewallRuleCollectiongroup> \
+         --set fw.policyRuleCollectionGroupPriority=<azureFirewallRuleCollectiongroupPriority> \
          --set auth.tenantId=<azureTenantId> \
          --set auth.clientId=<azureClientId> \
          --set auth.clientSecret=<azureClientSecret>

@@ -68,6 +68,7 @@ helm install [RELEASE_NAME] oci://mcr.microsoft.com/azfw/helmchart/afec --versio
          --set fw.policysubscriptionId=<fwpolicySubscriptionId> \
          --set fw.policyName=<fwPolicyName> \
          --set fw.policyRuleCollectionGroup=<fwPolicyRuleCollectionGroup> \
+         --set fw.policyRuleCollectionGroupPriority=<fwPolicyRuleCollectionGroupPriority> \
          --set auth.tenantId=<azureTenantId> \
          --set auth.clientId=<azureClientId> \
          --set auth.clientSecret=<azureClientSecret>
@@ -82,6 +83,7 @@ If a Firewall Policy Resource Id is provided, individual fields of fwpolicySubsc
 - `<fwpolicySubscriptionId>` : The Azure Subscription ID in which Azure Firewall Policy resides. Example: `a123b234-a3b4-557d-b2df-a0bc12de1234`
 - `<fwPolicyName>` : Name of the Azure Firewall Policy that is attached to the firewall.
 - `<fwPolicyRuleCollectionGroup>` : The Rule Collection Group in the Firewall Policy dedicated to the Egress Controller.
+- `<fwPolicyRuleCollectionGroupPriority>` : The Priority of the Rule Collection Group in the Firewall Policy dedicated to the Egress Controller.
 - `<azureTenantId>` : The tenant ID of the Identity.
 - `<azureClientId>` : The client ID of the Identity.
 - `<azureClientSecret>` : The client Secret of the Identity.
@@ -97,6 +99,7 @@ helm upgrade [RELEASE_NAME] afec-helm \
          --set fw.policysubscriptionId=<fwpolicySubscriptionId> \
          --set fw.policyName=<fwPolicyName> \
          --set fw.policyRuleCollectionGroup=<fwPolicyRuleCollectionGroup> \
+         --set fw.policyRuleCollectionGroupPriority=<fwPolicyRuleCollectionGroupPriority> \
          --set auth.tenantId=<azureTenantId> \
          --set auth.clientId=<azureClientId> \
          --set auth.clientSecret=<azureClientSecret>

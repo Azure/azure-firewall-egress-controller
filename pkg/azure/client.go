@@ -31,11 +31,11 @@ const (
 
 var pollers = make(map[string]*runtime.Poller[a.IPGroupsClientCreateOrUpdateResponse])
 var lastNodeLabels = cmap.New[map[string]string]()
-var firewallPolicyLoc = ""
 
 // AzClient is an interface for client to Azure
 type AzClient interface {
 	SetAuthorizer(authorizer autorest.Authorizer)
+	FetchFirewallPolicyLocation() string
 	UpdateFirewallPolicy(ctx context.Context, req ctrl.Request) error
 	processRequest(ctx context.Context, req ctrl.Request) error
 	BuildPolicy(items egressv1.EgressrulesList, erulesSourceAddresses map[string][]string) error
@@ -49,19 +49,21 @@ type azClient struct {
 	ipGroupClient                     *a.IPGroupsClient
 	clientID                          string
 
-	subscriptionID                  string
-	resourceGroupName               string
-	fwPolicyName                    string
-	fwPolicyRuleCollectionGroupName string
-	queue                           *Queue
-	client                          client.Client
-	lastEgressRules                 egressv1.EgressrulesList
+	subscriptionID                      string
+	resourceGroupName                   string
+	fwPolicyName                        string
+	fwPolicyRuleCollectionGroupName     string
+	fwPolicyRuleCollectionGroupPriority int32
+	firewallPolicyLoc                   string
+	queue                               *Queue
+	client                              client.Client
+	lastEgressRules                     egressv1.EgressrulesList
 
 	ctx context.Context
 }
 
 // NewAzClient returns an Azure Client
-func NewAzClient(subscriptionID string, resourceGroupName string, fwPolicyName string, fwPolicyRuleCollectionGroupName string, clientID string, client client.Client) AzClient {
+func NewAzClient(subscriptionID string, resourceGroupName string, fwPolicyName string, fwPolicyRuleCollectionGroupName string, fwPolicyRuleCollectionGroupPriority int32, clientID string, client client.Client) AzClient {
 	settings, err := auth.GetSettingsFromEnvironment()
 	if err != nil {
 		return nil
@@ -81,19 +83,17 @@ func NewAzClient(subscriptionID string, resourceGroupName string, fwPolicyName s
 		ipGroupClient:                     ipGroupClient,
 		clientID:                          clientID,
 
-		subscriptionID:                  subscriptionID,
-		resourceGroupName:               resourceGroupName,
-		fwPolicyName:                    fwPolicyName,
-		fwPolicyRuleCollectionGroupName: fwPolicyRuleCollectionGroupName,
-		queue:                           NewQueue("policyBuilder"),
-		client:                          client,
-		lastEgressRules:                 egressv1.EgressrulesList{},
+		subscriptionID:                      subscriptionID,
+		resourceGroupName:                   resourceGroupName,
+		fwPolicyName:                        fwPolicyName,
+		fwPolicyRuleCollectionGroupName:     fwPolicyRuleCollectionGroupName,
+		fwPolicyRuleCollectionGroupPriority: fwPolicyRuleCollectionGroupPriority,
+		firewallPolicyLoc:                   "",
+		queue:                               NewQueue("policyBuilder"),
+		client:                              client,
+		lastEgressRules:                     egressv1.EgressrulesList{},
 
 		ctx: context.Background(),
-	}
-
-	if firewallPolicyLoc == "" {
-		az.fetchFirewallPolicyLocation()
 	}
 
 	worker := NewWorker(az.queue)
@@ -310,7 +310,7 @@ func (az *azClient) fetchNodeIps(ctx context.Context, req ctrl.Request, erulesLi
 
 func (az *azClient) updateIpGroup(sourceAddress []*string, ipGroupsName string) *runtime.Poller[a.IPGroupsClientCreateOrUpdateResponse] {
 	poller, err := az.ipGroupClient.BeginCreateOrUpdate(az.ctx, az.resourceGroupName, ipGroupsName, a.IPGroup{
-		Location: to.StringPtr(firewallPolicyLoc),
+		Location: to.StringPtr(az.firewallPolicyLoc),
 		Tags:     map[string]*string{},
 		Properties: &a.IPGroupPropertiesFormat{
 			IPAddresses: sourceAddress,
@@ -329,7 +329,7 @@ func (az *azClient) BuildPolicy(erulesList egressv1.EgressrulesList, erulesSourc
 
 	fwRuleCollectionGrpObj := &n.FirewallPolicyRuleCollectionGroup{
 		FirewallPolicyRuleCollectionGroupProperties: &(n.FirewallPolicyRuleCollectionGroupProperties{
-			Priority:        to.Int32Ptr(400),
+			Priority:        to.Int32Ptr(az.fwPolicyRuleCollectionGroupPriority),
 			RuleCollections: ruleCollections,
 		}),
 	}
@@ -351,13 +351,13 @@ func (az *azClient) BuildPolicy(erulesList egressv1.EgressrulesList, erulesSourc
 	return
 }
 
-func (az *azClient) fetchFirewallPolicyLocation() (err error) {
+func (az *azClient) FetchFirewallPolicyLocation() string {
 	fwPolicyObj, err := az.fwPolicyClient.Get(az.ctx, string(az.resourceGroupName), az.fwPolicyName, "True")
 
 	if err != nil {
-		klog.Error("Firewall Policy not found")
+		klog.Error("Firewall Policy not found", err)
 	} else {
-		firewallPolicyLoc = *fwPolicyObj.Location
+		az.firewallPolicyLoc = *fwPolicyObj.Location
 	}
-	return
+	return az.firewallPolicyLoc
 }
