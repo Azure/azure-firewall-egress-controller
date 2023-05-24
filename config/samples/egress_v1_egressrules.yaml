@@ -10,8 +10,8 @@ spec:
       rules:
         - ruleName: "erule1-rule"
           ruleCollectionName: "aks-fw-ng-network"
+          priority: 100
           destinationFqdns: ["*"]
-          destinationAddresses: []
           destinationPorts: ["*"]
           protocol : ["TCP","UDP"]
           action : "Deny"

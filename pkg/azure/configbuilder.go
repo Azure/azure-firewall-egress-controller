@@ -53,25 +53,10 @@ func NotFoundRuleCollection(rule egressv1.AzureFirewallEgressrulesRulesSpec, rul
 }
 
 func BuildRuleCollection(egressrule egressv1.AzureFirewallEgressRulesSpec, rule egressv1.AzureFirewallEgressrulesRulesSpec, erulesSourceAddresses map[string][]string) n.BasicFirewallPolicyRuleCollection {
-	var priority int32
-	if rule.Action == "Allow" {
-		if rule.RuleType == "Application" {
-			priority = 210
-		} else {
-			priority = 110
-		}
-	} else {
-		if rule.RuleType == "Application" {
-			priority = 200
-		} else {
-			priority = 100
-		}
-	}
-
 	ruleCollection := &n.FirewallPolicyFilterRuleCollection{
 		Name:               to.StringPtr(rule.RuleCollectionName),
 		Action:             BuildAction(rule.Action),
-		Priority:           &priority,
+		Priority:           to.Int32Ptr(rule.Priority),
 		RuleCollectionType: GetRuleCollectionType(rule.RuleType),
 		Rules:              BuildRules(egressrule, rule, erulesSourceAddresses),
 	}

@@ -11,12 +11,14 @@ spec:
       rules:
         - ruleName: "rule1"
           ruleCollectionName: "aks-fw-ng"
+          priority: 200
           targetFqdns: ["*.yahoo.com"]
           protocol : ["HTTPS:443"]
           action : "Deny"
           ruleType: "Application"
         - ruleName: "rule2"
           ruleCollectionName: "aks-fw-ng-allow"
+          priority: 210
           targetFqdns: ["*.google.com"]
           protocol : ["HTTP:800"]
           action : "Allow"
@@ -28,16 +30,16 @@ spec:
       rules:
         - ruleName: "rule3"
           ruleCollectionName: "aks-fw-ng-network"
+          priority: 110
           destinationFqdns: ["*"]
-          destinationAddresses: []
           destinationPorts: ["*"]
           protocol : ["TCP","UDP"]
           action : "Allow"
           ruleType: "Network"
         - ruleName: "rule4"
           ruleCollectionName: "aks-fw-ng-network-deny"
+          priority: 100
           destinationFqdns: ["*"]
-          destinationAddresses: []
           destinationPorts: ["*"]
           protocol : ["TCP","UDP"]
           action : "Deny"

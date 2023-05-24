@@ -39,7 +39,10 @@ type AzureFirewallEgressRulesSpec struct {
 }
 
 type AzureFirewallEgressrulesRulesSpec struct {
-	RuleCollectionName string `json:"ruleCollectionName,omitempty"`
+	// +kubebuilder:validation:Required
+	RuleCollectionName string `json:"ruleCollectionName"`
+	// +kubebuilder:validation:Required
+	Priority int32 `json:"priority"`
 	// +kubebuilder:validation:Required
 	RuleName             string   `json:"ruleName"`
 	DestinationAddresses []string `json:"destinationAddresses,omitempty"`

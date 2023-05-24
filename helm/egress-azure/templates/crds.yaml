@@ -67,6 +67,9 @@ spec:
                             items:
                               type: string
                             type: array
+                          priority:
+                            format: int32
+                            type: integer
                           protocol:
                             items:
                               type: string
@@ -87,7 +90,9 @@ spec:
                             type: array
                         required:
                         - action
+                        - priority
                         - protocol
+                        - ruleCollectionName
                         - ruleName
                         - ruleType
                         type: object
