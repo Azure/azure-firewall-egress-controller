@@ -28,7 +28,7 @@ func (az *azClient) AddTaints(ctx context.Context, req ctrl.Request) {
 	if err := az.client.Get(ctx, req.NamespacedName, node); err != nil {
 		klog.Error(err, "unable to fetch Node")
 	}
-	if !CheckIfTaintExists(node, taint) {
+	if !CheckIfTaintExists(node) {
 		patch := client.MergeFrom(node.DeepCopy())
 		node.Spec.Taints = append(node.Spec.Taints, taint)
 		err := az.client.Patch(ctx, node, patch)
@@ -40,12 +40,8 @@ func (az *azClient) AddTaints(ctx context.Context, req ctrl.Request) {
 	}
 }
 
-func (az *azClient) RemoveTaints(ctx context.Context, req ctrl.Request) {
-	node := &corev1.Node{}
-	if err := az.client.Get(ctx, req.NamespacedName, node); err != nil {
-		klog.Error(err, "unable to fetch Node")
-	}
-	if CheckIfTaintExists(node, taint) {
+func (az *azClient) RemoveTaints(ctx context.Context, node *corev1.Node) {
+	if CheckIfTaintExists(node) {
 		var updatedTaints []corev1.Taint
 		for _, t := range node.Spec.Taints {
 			if t.Key != taint.Key {
@@ -64,7 +60,7 @@ func (az *azClient) RemoveTaints(ctx context.Context, req ctrl.Request) {
 	}
 }
 
-func (az *azClient) WaitForNodeIpGroupUpdate(ctx context.Context, req ctrl.Request, pollers map[string]*runtime.Poller[a.IPGroupsClientCreateOrUpdateResponse]) {
+func (az *azClient) WaitForNodeIpGroupUpdate(ctx context.Context, nodesWithFwTaint []*corev1.Node, pollers map[string]*runtime.Poller[a.IPGroupsClientCreateOrUpdateResponse]) {
 	var wg sync.WaitGroup
 	for _, poller := range pollers {
 		wg.Add(1)
@@ -77,10 +73,12 @@ func (az *azClient) WaitForNodeIpGroupUpdate(ctx context.Context, req ctrl.Reque
 		}(poller)
 	}
 	wg.Wait()
-	az.RemoveTaints(ctx, req)
+	for _, node := range nodesWithFwTaint {
+		az.RemoveTaints(ctx, node)
+	}
 }
 
-func CheckIfTaintExists(node *corev1.Node, taint corev1.Taint) bool {
+func CheckIfTaintExists(node *corev1.Node) bool {
 	for _, t := range node.Spec.Taints {
 		if t.Key == taint.Key && t.Effect == taint.Effect {
 			return true

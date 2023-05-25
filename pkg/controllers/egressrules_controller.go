@@ -61,10 +61,11 @@ func (r *EgressrulesReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 	node := &corev1.Node{}
 	err := r.Get(ctx, req.NamespacedName, node)
-	if (err != nil && req.NamespacedName.Namespace != "kube-system") || (err == nil && !a.CheckIfNodeNotReady(node)) {
+	if req.NamespacedName.Namespace != "kube-system" {
+		if err == nil && a.CheckIfNodeNotReady(node) {
+			go r.AzClient.AddTaints(ctx, req)
+		}
 		go r.AzClient.UpdateFirewallPolicy(ctx, req)
-	} else if a.CheckIfNodeNotReady(node) {
-		go r.AzClient.AddTaints(ctx, req)
 	}
 
 	return ctrl.Result{}, nil
@@ -87,9 +88,6 @@ func (r *EgressrulesReconciler) SetupWithManager(mgr ctrl.Manager) error {
 					return labelChanged || ipChanged
 				}
 				return true
-			},
-			GenericFunc: func(event.GenericEvent) bool {
-				return false
 			},
 		}).
 		Complete(r)
