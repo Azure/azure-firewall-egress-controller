@@ -123,6 +123,10 @@ func (w *Worker) DoWork() bool {
 			}
 
 			nodesWithFwTaint := w.drainChan(job)
+			node := &corev1.Node{}
+			if err := w.client.Get(job.ctx, job.Request.NamespacedName, node); err == nil {
+				nodesWithFwTaint = append(nodesWithFwTaint, node)
+			}
 
 			err := job.Run(nodesWithFwTaint)
 			if err != nil {

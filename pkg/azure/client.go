@@ -125,6 +125,7 @@ func (az *azClient) processRequest(ctx context.Context, req ctrl.Request, nodesW
 	processEventStart := time.Now()
 
 	var erulesSourceAddresses = make(map[string][]string)
+	var ipGroupIds = make(map[string]string)
 	erulesList := &egressv1.EgressrulesList{}
 	listOpts := []client.ListOption{}
 	if err := az.client.List(ctx, erulesList, listOpts...); err != nil {
@@ -136,37 +137,64 @@ func (az *azClient) processRequest(ctx context.Context, req ctrl.Request, nodesW
 		return err
 	}
 
+	//fetch all the Ip groups in a resource group
+	var ipGroupsInRG = make(map[string]*a.IPGroup)
+	res1 := az.ipGroupClient.NewListByResourceGroupPager(az.resourceGroupName, nil)
+	for res1.More() {
+		page, err := res1.NextPage(ctx)
+		if err != nil {
+			klog.Error("failed to advance page: %v", err)
+		}
+		for _, ipGroup := range page.Value {
+			ipGroupsInRG[*ipGroup.Name] = ipGroup
+		}
+	}
+
 	for _, item := range erulesList.Items {
 		for _, egressrule := range item.Spec.EgressRules {
 			var sourceIpGroups []string
 			if egressrule.NodeSelector != nil {
 				for _, m := range egressrule.NodeSelector {
 					for k, v := range m {
-						sourceAddress := getSourceAddressesByNodeLabels(k, v, *nodeList)
 						IPGroupName := IpGroupNamePrefix + k + v
-						var addressesInIpGroup []*string
-						res, err1 := az.ipGroupClient.Get(az.ctx, az.resourceGroupName, IPGroupName, &a.IPGroupsClientGetOptions{Expand: nil})
-						if err1 == nil {
-							addressesInIpGroup = res.IPGroup.Properties.IPAddresses
-							if *res.Properties.ProvisioningState == a.ProvisioningStateUpdating && pollers[IPGroupName] != nil {
-								_, err = pollers[IPGroupName].PollUntilDone(ctx, nil)
+						if ipGroupIds[IPGroupName] == "" {
+							sourceAddress := getSourceAddressesByNodeLabels(k, v, *nodeList)
+							var id = ""
+
+							//check if IP Group already exists
+							if _, ok := ipGroupsInRG[IPGroupName]; ok {
+								addressesInIpGroup := ipGroupsInRG[IPGroupName].Properties.IPAddresses
+								IPGroupProvisioningState := *ipGroupsInRG[IPGroupName].Properties.ProvisioningState
+								if len(sourceAddress) == len(addressesInIpGroup) && !checkIfElementsPresentInArray(sourceAddress, addressesInIpGroup) {
+									//IP group not changed
+									id = *ipGroupsInRG[IPGroupName].ID
+								} else if IPGroupProvisioningState == a.ProvisioningStateUpdating && pollers[IPGroupName] != nil {
+									//if the IP group is in updating state, wait for it to complete.
+									klog.Info("Waiting for the Ip group update to complete, ", IPGroupName)
+									_, err = pollers[IPGroupName].PollUntilDone(ctx, nil)
+								}
 							}
+
+							// update IP Group and get the associated ID.
+							if id == "" {
+								poller := az.updateIpGroup(sourceAddress, IPGroupName)
+								pollers[IPGroupName] = poller
+								res, err1 := az.ipGroupClient.Get(az.ctx, az.resourceGroupName, IPGroupName, &a.IPGroupsClientGetOptions{Expand: nil})
+								if err1 != nil {
+									klog.Error("Failed to get the IP Group", err1)
+								}
+								id = *res.IPGroup.ID
+							}
+							ipGroupIds[IPGroupName] = id
 						}
-						if err1 != nil || len(sourceAddress) != len(addressesInIpGroup) || checkIfElementsPresentInArray(sourceAddress, addressesInIpGroup) {
-							poller := az.updateIpGroup(sourceAddress, IPGroupName)
-							pollers[IPGroupName] = poller
-						}
-						res, err1 = az.ipGroupClient.Get(az.ctx, az.resourceGroupName, IPGroupName, &a.IPGroupsClientGetOptions{Expand: nil})
-						if err1 != nil {
-							klog.Error("failed to get the IP Group", err1)
-						}
-						sourceIpGroups = append(sourceIpGroups, *res.IPGroup.ID)
+						sourceIpGroups = append(sourceIpGroups, ipGroupIds[IPGroupName])
 					}
 				}
 			}
 			erulesSourceAddresses[egressrule.Name] = sourceIpGroups
 		}
 	}
+
 	go az.WaitForNodeIpGroupUpdate(ctx, nodesWithFwTaint, pollers)
 
 	//Generate fw config
