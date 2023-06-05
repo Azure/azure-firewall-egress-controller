@@ -8,12 +8,17 @@ package azure
 import (
 	"context"
 	"sync"
+	"time"
 
 	//egressv1 "github.com/Azure/azure-firewall-egress-controller/api/v1"
 	"github.com/orcaman/concurrent-map/v2"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
+
+const minTimeBetweenUpdates = 1 * time.Second
 
 var jobsInQueue = cmap.New[bool]()
 var mutex sync.Mutex
@@ -33,7 +38,8 @@ type Job struct {
 }
 
 type Worker struct {
-	Queue *Queue
+	Queue  *Queue
+	client client.Client
 }
 
 // NewQueue instantiates new queue.
@@ -59,22 +65,45 @@ func (q *Queue) AddJob(job Job) {
 	q.jobs <- job
 }
 
-func (j Job) Run() error {
-	resourceName := j.Request.NamespacedName.Name
-	jobsInQueue.Set(resourceName, false)
+func (j Job) Run(nodesWithFwTaint []*corev1.Node) error {
 	klog.Info("Processing request: ", j.Request)
-	j.AzClient.processRequest(j.ctx, j.Request)
+	j.AzClient.processRequest(j.ctx, j.Request, nodesWithFwTaint)
 	return nil
 }
 
-func NewWorker(queue *Queue) *Worker {
+func NewWorker(queue *Queue, client client.Client) *Worker {
 	return &Worker{
-		Queue: queue,
+		Queue:  queue,
+		client: client,
+	}
+}
+
+func (w *Worker) drainChan(defaultEvent Job) []*corev1.Node {
+	var nodesWithFwTaint []*corev1.Node
+	c := 0
+	for {
+		select {
+		case event := <-w.Queue.jobs:
+			resourceName := event.Request.NamespacedName.Name
+			jobsInQueue.Set(resourceName, false)
+			c = c + 1
+			node := &corev1.Node{}
+			if err := w.client.Get(event.ctx, event.Request.NamespacedName, node); err == nil {
+				if CheckIfTaintExists(node) {
+					nodesWithFwTaint = append(nodesWithFwTaint, node)
+				}
+			}
+		default:
+			klog.Infof("Draining %d events from work channel", c)
+			return nodesWithFwTaint
+		}
 	}
 }
 
 // DoWork processes jobs from the queue (jobs channel).
 func (w *Worker) DoWork() bool {
+	lastUpdate := time.Now().Add(-1 * time.Second)
+	klog.Info("Worker started")
 	for {
 		select {
 		case <-w.Queue.ctx.Done():
@@ -82,11 +111,30 @@ func (w *Worker) DoWork() bool {
 			return true
 		// if job received.
 		case job := <-w.Queue.jobs:
-			err := job.Run()
+
+			resourceName := job.Request.NamespacedName.Name
+			jobsInQueue.Set(resourceName, false)
+
+			since := time.Since(lastUpdate)
+			if since < minTimeBetweenUpdates {
+				sleep := minTimeBetweenUpdates - since
+				klog.Infof("[worker] It has been %+v since last update; Sleeping for %+v before next update", since, sleep)
+				time.Sleep(sleep)
+			}
+
+			nodesWithFwTaint := w.drainChan(job)
+			node := &corev1.Node{}
+			if err := w.client.Get(job.ctx, job.Request.NamespacedName, node); err == nil {
+				nodesWithFwTaint = append(nodesWithFwTaint, node)
+			}
+
+			err := job.Run(nodesWithFwTaint)
 			if err != nil {
 				klog.Error("Err in DoWork ... :", err)
 				continue
 			}
+
+			lastUpdate = time.Now()
 		}
 	}
 }
