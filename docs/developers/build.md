@@ -92,7 +92,7 @@ If a Firewall Policy Resource Id is provided, individual fields of fwpolicySubsc
 2. To upgrade the chart
 
 ```console
-helm upgrade [RELEASE_NAME] afec-helm \
+helm upgrade [RELEASE_NAME] oci://mcr.microsoft.com/azfw/helmchart/afec --version [LATEST_VERSION] \
          --debug \
          --set fw.policyResourceId=<fwpolicyResourceId> \
          --set fw.policyResourceGroup=<fwpolicyResourceGroup> \
@@ -104,5 +104,6 @@ helm upgrade [RELEASE_NAME] afec-helm \
          --set auth.clientId=<azureClientId> \
          --set auth.clientSecret=<azureClientSecret>
 ```
+`[LATEST_VERSION]` is the specific version to which you intend to upgrade your Helm release.<br>
 
 4. Check the log of the newly created pod to verify if it started properly.
