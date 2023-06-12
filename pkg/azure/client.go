@@ -41,7 +41,7 @@ type AzClient interface {
 }
 
 type azClient struct {
-	fwPolicyClient                    n.FirewallPoliciesClient
+	fwPolicyClient                    *a.FirewallPoliciesClient
 	fwPolicyRuleCollectionGroupClient n.FirewallPolicyRuleCollectionGroupsClient
 	ipGroupClient                     *a.IPGroupsClient
 	clientID                          string
@@ -75,8 +75,12 @@ func NewAzClient(subscriptionID string, resourceGroupName string, fwPolicyName s
 	if err != nil {
 		klog.Error("failed to create IP group client: %v", err)
 	}
+	fwPolicyClient, err := a.NewFirewallPoliciesClient(string(subscriptionID), cred, nil)
+	if err != nil {
+		klog.Error("failed to create Firewall Policy client: %v", err)
+	}
 	az := &azClient{
-		fwPolicyClient:                    n.NewFirewallPoliciesClientWithBaseURI(settings.Environment.ResourceManagerEndpoint, string(subscriptionID)),
+		fwPolicyClient:                    fwPolicyClient,
 		fwPolicyRuleCollectionGroupClient: n.NewFirewallPolicyRuleCollectionGroupsClientWithBaseURI(settings.Environment.ResourceManagerEndpoint, string(subscriptionID)),
 		ipGroupClient:                     ipGroupClient,
 		clientID:                          clientID,
@@ -102,7 +106,6 @@ func NewAzClient(subscriptionID string, resourceGroupName string, fwPolicyName s
 }
 
 func (az *azClient) SetAuthorizer(authorizer autorest.Authorizer) {
-	az.fwPolicyClient.Authorizer = authorizer
 	az.fwPolicyRuleCollectionGroupClient.Authorizer = authorizer
 }
 
@@ -239,6 +242,20 @@ func (az *azClient) BuildPolicy(erulesList egressv1.EgressrulesList, erulesSourc
 	configJSON, _ := dumpSanitizedJSON(fwRuleCollectionGrpObj)
 	klog.Infof("Generated config:\n%s", string(configJSON))
 
+	//Poll for policy provisioning state and update the policy if the provisioning state is not "Updating"
+	isPolicyInUpdatingState := false
+	for {
+		fwPolicyObj, err := az.fwPolicyClient.Get(az.ctx, string(az.resourceGroupName), az.fwPolicyName, &a.FirewallPoliciesClientGetOptions{Expand: nil})
+		if err != nil || *fwPolicyObj.Properties.ProvisioningState != a.ProvisioningStateUpdating {
+			break
+		} else {
+			if !isPolicyInUpdatingState {
+				klog.Info("FW Policy is in the Updating state, waiting for the update to complete.....")
+				isPolicyInUpdatingState = true
+			}
+		}
+	}
+
 	// Initiate deployment
 	klog.Info("BEGIN firewall policy deployment")
 	fwRuleCollectionGrp, err1 := az.fwPolicyRuleCollectionGroupClient.CreateOrUpdate(az.ctx, string(az.resourceGroupName), az.fwPolicyName, az.fwPolicyRuleCollectionGroupName, *fwRuleCollectionGrpObj)
@@ -261,7 +278,7 @@ func (az *azClient) BuildPolicy(erulesList egressv1.EgressrulesList, erulesSourc
 }
 
 func (az *azClient) FetchFirewallPolicyLocation() string {
-	fwPolicyObj, err := az.fwPolicyClient.Get(az.ctx, string(az.resourceGroupName), az.fwPolicyName, "True")
+	fwPolicyObj, err := az.fwPolicyClient.Get(az.ctx, string(az.resourceGroupName), az.fwPolicyName, &a.FirewallPoliciesClientGetOptions{Expand: nil})
 
 	if err != nil {
 		klog.Error("Firewall Policy not found", err)
