@@ -18,7 +18,7 @@ helm install [RELEASE_NAME] oci://mcr.microsoft.com/azfw/helmchart/afec --versio
 2. To upgrade the chart:
 
 ```console
-helm upgrade [RELEASE_NAME] afec-helm \
+helm upgrade [RELEASE_NAME] oci://mcr.microsoft.com/azfw/helmchart/afec --version [LATEST_VERSION] \
          --debug \
          --set fw.fwResourceGroup=<resourceGroup> \
          --set fw.subscriptionId=<subscriptionId> \
