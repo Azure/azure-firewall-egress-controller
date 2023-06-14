@@ -34,9 +34,9 @@ type Pair struct {
 }
 
 // log is for logging in this package.
-var egressruleslog = logf.Log.WithName("egressrules-resource")
+var azurefirewallruleslog = logf.Log.WithName("azurefirewallrules-resource")
 
-func (r *Egressrules) SetupWebhookWithManager(mgr ctrl.Manager) error {
+func (r *AzureFirewallRules) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(r).
 		Complete()
@@ -45,33 +45,33 @@ func (r *Egressrules) SetupWebhookWithManager(mgr ctrl.Manager) error {
 // TODO(user): EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 
 // TODO(user): change verbs to "verbs=create;update;delete" if you want to enable deletion validation.
-//+kubebuilder:webhook:path=/validate-egress-azure-firewall-egress-controller-io-v1-egressrules,mutating=false,failurePolicy=fail,sideEffects=None,groups=egress.azure-firewall-egress-controller.io,resources=egressrules,verbs=create;update,versions=v1,name=vegressrules.kb.io,admissionReviewVersions=v1
+//+kubebuilder:webhook:path=/validate-egress-azure-firewall-egress-controller-io-v1-azurefirewallrules,mutating=false,failurePolicy=fail,sideEffects=None,groups=egress.azure-firewall-egress-controller.io,resources=azurefirewallrules,verbs=create;update,versions=v1,name=vazurefirewallrules.kb.io,admissionReviewVersions=v1
 
-var _ webhook.Validator = &Egressrules{}
+var _ webhook.Validator = &AzureFirewallRules{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (r *Egressrules) ValidateCreate() error {
-	egressruleslog.Info("validate create", "name", r.Name)
+func (r *AzureFirewallRules) ValidateCreate() error {
+	azurefirewallruleslog.Info("validate create", "name", r.Name)
 
 	return r.validateFields()
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *Egressrules) ValidateUpdate(old runtime.Object) error {
-	egressruleslog.Info("validate update", "name", r.Name)
+func (r *AzureFirewallRules) ValidateUpdate(old runtime.Object) error {
+	azurefirewallruleslog.Info("validate update", "name", r.Name)
 
 	return r.validateFields()
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (r *Egressrules) ValidateDelete() error {
-	egressruleslog.Info("validate delete", "name", r.Name)
+func (r *AzureFirewallRules) ValidateDelete() error {
+	azurefirewallruleslog.Info("validate delete", "name", r.Name)
 
 	// TODO(user): fill in your validation logic upon object deletion.
 	return nil
 }
 
-func (r *Egressrules) validateFields() error {
+func (r *AzureFirewallRules) validateFields() error {
 	var priorityMap = make(map[int32]string)
 	var ruleCollectionNameMap = make(map[string]Pair)
 	for _, egressrule := range r.Spec.EgressRules {
@@ -99,7 +99,7 @@ func (r *Egressrules) validateFields() error {
 
 			if rule.RuleType == "Application" {
 				if rule.TargetFqdns == nil {
-					return errors.New("Invalid Rule " + rule.RuleName + " Target Fqdns field is mandatory field for Application rule in")
+					return errors.New("Invalid Rule " + rule.RuleName + " Target Fqdns field is mandatory field for Application rule")
 				} else if rule.DestinationAddresses != nil || rule.DestinationFqdns != nil || rule.DestinationPorts != nil {
 					return errors.New("Invalid Rule " + rule.RuleName + " Fields DestinationAddresses/DestinationFqdns/DestinationPorts are not supported by Application Rule")
 				}

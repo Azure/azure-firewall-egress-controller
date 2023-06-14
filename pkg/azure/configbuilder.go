@@ -9,12 +9,12 @@ import (
 	"strconv"
 	"strings"
 
-	egressv1 "github.com/Azure/azure-firewall-egress-controller/pkg/api/v1"
+	azurefirewallrulesv1 "github.com/Azure/azure-firewall-egress-controller/pkg/api/v1"
 	n "github.com/Azure/azure-sdk-for-go/services/network/mgmt/2021-03-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 )
 
-func BuildFirewallConfig(erulesList egressv1.EgressrulesList, erulesSourceAddresses map[string][]string) *[]n.BasicFirewallPolicyRuleCollection {
+func BuildFirewallConfig(erulesList azurefirewallrulesv1.AzureFirewallRulesList, erulesSourceAddresses map[string][]string) *[]n.BasicFirewallPolicyRuleCollection {
 	var ruleCollections []n.BasicFirewallPolicyRuleCollection
 
 	for _, item := range erulesList.Items {
@@ -42,7 +42,7 @@ func BuildFirewallConfig(erulesList egressv1.EgressrulesList, erulesSourceAddres
 	return &ruleCollections
 }
 
-func NotFoundRuleCollection(rule egressv1.AzureFirewallEgressrulesRulesSpec, ruleCollections []n.BasicFirewallPolicyRuleCollection) bool {
+func NotFoundRuleCollection(rule azurefirewallrulesv1.AzureFirewallEgressrulesRulesSpec, ruleCollections []n.BasicFirewallPolicyRuleCollection) bool {
 	for i := 0; i < len(ruleCollections); i++ {
 		ruleCollection := ruleCollections[i].(*n.FirewallPolicyFilterRuleCollection)
 		if rule.RuleCollectionName == *ruleCollection.Name {
@@ -52,7 +52,7 @@ func NotFoundRuleCollection(rule egressv1.AzureFirewallEgressrulesRulesSpec, rul
 	return true
 }
 
-func BuildRuleCollection(egressrule egressv1.AzureFirewallEgressRulesSpec, rule egressv1.AzureFirewallEgressrulesRulesSpec, erulesSourceAddresses map[string][]string) n.BasicFirewallPolicyRuleCollection {
+func BuildRuleCollection(egressrule azurefirewallrulesv1.AzureFirewallEgressRulesSpec, rule azurefirewallrulesv1.AzureFirewallEgressrulesRulesSpec, erulesSourceAddresses map[string][]string) n.BasicFirewallPolicyRuleCollection {
 	ruleCollection := &n.FirewallPolicyFilterRuleCollection{
 		Name:               to.StringPtr(rule.RuleCollectionName),
 		Action:             BuildAction(rule.Action),
@@ -63,14 +63,14 @@ func BuildRuleCollection(egressrule egressv1.AzureFirewallEgressRulesSpec, rule 
 	return ruleCollection
 }
 
-func BuildRules(egressrule egressv1.AzureFirewallEgressRulesSpec, rule egressv1.AzureFirewallEgressrulesRulesSpec, erulesSourceAddresses map[string][]string) *[]n.BasicFirewallPolicyRule {
+func BuildRules(egressrule azurefirewallrulesv1.AzureFirewallEgressRulesSpec, rule azurefirewallrulesv1.AzureFirewallEgressrulesRulesSpec, erulesSourceAddresses map[string][]string) *[]n.BasicFirewallPolicyRule {
 	var fwRules []n.BasicFirewallPolicyRule
 	fwRule := GetRule(egressrule, rule, erulesSourceAddresses)
 	fwRules = append(fwRules, fwRule)
 	return &fwRules
 }
 
-func GetRule(egressrule egressv1.AzureFirewallEgressRulesSpec, rule egressv1.AzureFirewallEgressrulesRulesSpec, erulesSourceAddresses map[string][]string) n.BasicFirewallPolicyRule {
+func GetRule(egressrule azurefirewallrulesv1.AzureFirewallEgressRulesSpec, rule azurefirewallrulesv1.AzureFirewallEgressrulesRulesSpec, erulesSourceAddresses map[string][]string) n.BasicFirewallPolicyRule {
 
 	sourceAddresses := erulesSourceAddresses[egressrule.Name]
 	var fwRule n.BasicFirewallPolicyRule

@@ -31,7 +31,7 @@ rules:
 - apiGroups:
   - egress.azure-firewall-egress-controller.io
   resources:
-  - egressrules
+  - azurefirewallrules
   verbs:
   - create
   - delete
@@ -43,13 +43,13 @@ rules:
 - apiGroups:
   - egress.azure-firewall-egress-controller.io
   resources:
-  - egressrules/finalizers
+  - azurefirewallrules/finalizers
   verbs:
   - update
 - apiGroups:
   - egress.azure-firewall-egress-controller.io
   resources:
-  - egressrules/status
+  - azurefirewallrules/status
   verbs:
   - get
   - patch
