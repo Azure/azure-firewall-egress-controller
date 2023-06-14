@@ -1,22 +1,18 @@
-apiVersion: egress.azure-firewall-egress-controller.io/v1
-kind: AzureFirewallRules
-metadata:
-  name: egressrules-sample1
-spec:
-  egressRules:
-    - name: "erule3"
-      nodeSelector:
-        - np18: "set1"
-        - np13: "set1"
-      rules:
-        - ruleName: "rule2"
-          ruleCollectionName: "aks-fw-ng-allow"
-          priority: 210
-          targetFqdns: ["*.google.com","www.google.com"]
-          protocol : ["HTTP:80"]
-          action : "Allow"
-          ruleType: "Application"
-  
-
-
-  
+apiVersion: egress.azure-firewall-egress-controller.io/v1 
+kind: AzureFirewallRules 
+metadata: 
+  name: egressrules-sample1 
+spec: 
+  egressRules: 
+    - name: "Allow-web" 
+      nodeSelector: 
+        - app: "service"
+      rules: 
+        - ruleName: "rule1" 
+          ruleCollectionName: "aks-fw-ng-network" 
+          priority: 100 
+          destinationAddresses: ["*"] 
+          destinationPorts: ["80","443"] 
+          protocol : ["TCP"] 
+          action : "Allow" 
+          ruleType: "Network" 
