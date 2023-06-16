@@ -1,22 +1,18 @@
-apiVersion: egress.azure-firewall-egress-controller.io/v1
-kind: Egressrules
-metadata:
-  name: egressrules-sample1
-spec:
-  egressRules:
-    - name: "erule3"
-      nodeSelector:
-        - app: "nginx0"
-      rules:
-        - ruleName: "erule1-rule"
-          ruleCollectionName: "aks-fw-ng-network"
-          priority: 100
-          destinationFqdns: ["*"]
-          destinationPorts: ["*"]
-          protocol : ["TCP","UDP"]
-          action : "Deny"
-          ruleType: "Network"
-  
-
-
-  
+apiVersion: egress.azure-firewall-egress-controller.io/v1 
+kind: AzureFirewallRules 
+metadata: 
+  name: egressrules-sample1 
+spec: 
+  egressRules: 
+    - name: "Allow-web" 
+      nodeSelector: 
+        - app: "service"
+      rules: 
+        - ruleName: "rule1" 
+          ruleCollectionName: "aks-fw-ng-network" 
+          priority: 100 
+          destinationAddresses: ["*"] 
+          destinationPorts: ["80","443"] 
+          protocol : ["TCP"] 
+          action : "Allow" 
+          ruleType: "Network" 

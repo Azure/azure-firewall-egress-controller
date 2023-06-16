@@ -1,6 +1,6 @@
 # erule1.yaml
 apiVersion: egress.azure-firewall-egress-controller.io/v1
-kind: Egressrules
+kind: AzureFirewallRules
 metadata:
   name: egressrules-sample3
 spec:

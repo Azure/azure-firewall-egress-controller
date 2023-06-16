@@ -9,7 +9,7 @@ import (
 	"context"
 	"time"
 
-	egressv1 "github.com/Azure/azure-firewall-egress-controller/pkg/api/v1"
+	azurefirewallrulesv1 "github.com/Azure/azure-firewall-egress-controller/pkg/api/v1"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	a "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v2"
@@ -35,7 +35,7 @@ type AzClient interface {
 	FetchFirewallPolicyLocation() string
 	UpdateFirewallPolicy(ctx context.Context, req ctrl.Request) error
 	processRequest(ctx context.Context, req ctrl.Request, nodesWithFwTaint []*corev1.Node) error
-	BuildPolicy(items egressv1.EgressrulesList, erulesSourceAddresses map[string][]string) error
+	BuildPolicy(items azurefirewallrulesv1.AzureFirewallRulesList, erulesSourceAddresses map[string][]string) error
 	AddTaints(ctx context.Context, req ctrl.Request)
 	RemoveTaints(ctx context.Context, node *corev1.Node)
 }
@@ -129,7 +129,7 @@ func (az *azClient) processRequest(ctx context.Context, req ctrl.Request, nodesW
 
 	var erulesSourceAddresses = make(map[string][]string)
 	var ipGroupIds = make(map[string]string)
-	erulesList := &egressv1.EgressrulesList{}
+	erulesList := &azurefirewallrulesv1.AzureFirewallRulesList{}
 	listOpts := []client.ListOption{}
 	if err := az.client.List(ctx, erulesList, listOpts...); err != nil {
 		return err
@@ -224,7 +224,7 @@ func (az *azClient) updateIpGroup(sourceAddress []*string, ipGroupsName string) 
 	return poller
 }
 
-func (az *azClient) BuildPolicy(erulesList egressv1.EgressrulesList, erulesSourceAddresses map[string][]string) (err error) {
+func (az *azClient) BuildPolicy(erulesList azurefirewallrulesv1.AzureFirewallRulesList, erulesSourceAddresses map[string][]string) (err error) {
 	ruleCollections := BuildFirewallConfig(erulesList, erulesSourceAddresses)
 
 	fwRuleCollectionGrpObj := &n.FirewallPolicyRuleCollectionGroup{

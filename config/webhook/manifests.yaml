@@ -11,9 +11,9 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-egress-azure-firewall-egress-controller-io-v1-egressrules
+      path: /validate-egress-azure-firewall-egress-controller-io-v1-azurefirewallrules
   failurePolicy: Fail
-  name: vegressrules.kb.io
+  name: vazurefirewallrules.kb.io
   rules:
   - apiGroups:
     - egress.azure-firewall-egress-controller.io
@@ -23,5 +23,5 @@ webhooks:
     - CREATE
     - UPDATE
     resources:
-    - egressrules
+    - azurefirewallrules
   sideEffects: None

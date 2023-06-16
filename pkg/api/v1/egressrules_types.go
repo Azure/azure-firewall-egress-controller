@@ -24,8 +24,8 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-// EgressrulesSpec defines the desired state of Egressrules
-type EgressrulesSpec struct {
+// AzureFirewallRulesSpec defines the desired state of azureFirewallRules
+type AzureFirewallRulesSpec struct {
 	EgressRules []AzureFirewallEgressRulesSpec `json:"egressRules,omitempty"`
 }
 
@@ -58,8 +58,8 @@ type AzureFirewallEgressrulesRulesSpec struct {
 	RuleType string `json:"ruleType"`
 }
 
-// EgressrulesStatus defines the observed state of Egressrules
-type EgressrulesStatus struct {
+// AzureFirewallRulesStatus defines the observed state of azureFirewallRules
+type AzureFirewallRulesStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 }
@@ -68,24 +68,24 @@ type EgressrulesStatus struct {
 //+kubebuilder:resource:scope=Cluster
 //+kubebuilder:subresource:status
 
-// Egressrules is the Schema for the egressrules API
-type Egressrules struct {
+// AzureFirewallRules is the Schema for the azureFirewallRules API
+type AzureFirewallRules struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   EgressrulesSpec   `json:"spec,omitempty"`
-	Status EgressrulesStatus `json:"status,omitempty"`
+	Spec   AzureFirewallRulesSpec   `json:"spec,omitempty"`
+	Status AzureFirewallRulesStatus `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 
-// EgressrulesList contains a list of Egressrules
-type EgressrulesList struct {
+// AzureFirewallRulesList contains a list of azureFirewallRules
+type AzureFirewallRulesList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Egressrules `json:"items"`
+	Items           []AzureFirewallRules `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&Egressrules{}, &EgressrulesList{})
+	SchemeBuilder.Register(&AzureFirewallRules{}, &AzureFirewallRulesList{})
 }

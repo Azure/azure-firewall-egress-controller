@@ -6,20 +6,20 @@ metadata:
     controller-gen.kubebuilder.io/version: v0.9.0
     cert-manager.io/inject-ca-from: aks-egress-system/aks-egress-serving-cert
   creationTimestamp: null
-  name: egressrules.egress.azure-firewall-egress-controller.io
+  name: azurefirewallrules.egress.azure-firewall-egress-controller.io
 spec:
   group: egress.azure-firewall-egress-controller.io
   names:
-    kind: Egressrules
-    listKind: EgressrulesList
-    plural: egressrules
-    singular: egressrules
+    kind: AzureFirewallRules
+    listKind: AzureFirewallRulesList
+    plural: azurefirewallrules
+    singular: azurefirewallrules
   scope: Cluster
   versions:
   - name: v1
     schema:
       openAPIV3Schema:
-        description: Egressrules is the Schema for the egressrules API
+        description: AzureFirewallRules is the Schema for the azureFirewallRules API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -34,7 +34,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: EgressrulesSpec defines the desired state of Egressrules
+            description: AzureFirewallRulesSpec defines the desired state of azureFirewallRules
             properties:
               egressRules:
                 items:
@@ -105,7 +105,7 @@ spec:
                 type: array
             type: object
           status:
-            description: EgressrulesStatus defines the observed state of Egressrules
+            description: AzureFirewallRulesStatus defines the observed state of azureFirewallRules
             type: object
         type: object
     served: true

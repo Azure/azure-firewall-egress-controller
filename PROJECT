@@ -14,7 +14,7 @@ resources:
   controller: true
   domain: azure-firewall-egress-controller.io
   group: egress
-  kind: Egressrules
+  kind: AzureFirewallRules
   path: azure-firewall-egress-controller.io/aks-egress/pkg/api/v1
   version: v1
   webhooks:

@@ -20,7 +20,7 @@ import (
 	"context"
 	"reflect"
 
-	egressv1 "github.com/Azure/azure-firewall-egress-controller/pkg/api/v1"
+	azurefirewallrulesv1 "github.com/Azure/azure-firewall-egress-controller/pkg/api/v1"
 	a "github.com/Azure/azure-firewall-egress-controller/pkg/azure"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -33,16 +33,16 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
-// EgressrulesReconciler reconciles a Egressrules object
-type EgressrulesReconciler struct {
+// AzureFirewallRulesReconciler reconciles a AzureFirewallRules object
+type AzureFirewallRulesReconciler struct {
 	client.Client
 	Scheme   *runtime.Scheme
 	AzClient a.AzClient
 }
 
-//+kubebuilder:rbac:groups=egress.azure-firewall-egress-controller.io,resources=egressrules,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=egress.azure-firewall-egress-controller.io,resources=egressrules/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=egress.azure-firewall-egress-controller.io,resources=egressrules/finalizers,verbs=update
+//+kubebuilder:rbac:groups=egress.azure-firewall-egress-controller.io,resources=azurefirewallrules,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=egress.azure-firewall-egress-controller.io,resources=azurefirewallrules/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=egress.azure-firewall-egress-controller.io,resources=azurefirewallrules/finalizers,verbs=update
 //+kubebuilder:rbac:groups=core,resources=nodes,verbs=get;watch;list
 //+kubebuilder:rbac:groups=core,resources=nodes,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=core,resources=nodes/status,verbs=get;watch;create;update;patch;delete
@@ -50,13 +50,13 @@ type EgressrulesReconciler struct {
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 // TODO(user): Modify the Reconcile function to compare the state specified by
-// the Egressrules object against the actual cluster state, and then
+// the AzureFirewallRules object against the actual cluster state, and then
 // perform operations to make the cluster state reflect the state specified by
 // the user.
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.12.1/pkg/reconcile
-func (r *EgressrulesReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *AzureFirewallRulesReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
 
 	node := &corev1.Node{}
@@ -72,9 +72,9 @@ func (r *EgressrulesReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *EgressrulesReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *AzureFirewallRulesReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&egressv1.Egressrules{}).
+		For(&azurefirewallrulesv1.AzureFirewallRules{}).
 		Watches(&source.Kind{Type: &corev1.Node{}}, &handler.EnqueueRequestForObject{}).
 		WithEventFilter(predicate.Funcs{
 			UpdateFunc: func(e event.UpdateEvent) bool {

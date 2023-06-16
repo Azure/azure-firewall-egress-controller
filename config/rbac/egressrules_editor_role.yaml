@@ -1,13 +1,13 @@
-# permissions for end users to edit egressrules.
+# permissions for end users to edit azurefirewallrules.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: egressrules-editor-role
+  name: azurefirewallrules-editor-role
 rules:
 - apiGroups:
   - egress.azure-firewall-egress-controller.io
   resources:
-  - egressrules
+  - azurefirewallrules
   verbs:
   - create
   - delete
@@ -19,6 +19,6 @@ rules:
 - apiGroups:
   - egress.azure-firewall-egress-controller.io
   resources:
-  - egressrules/status
+  - azurefirewallrules/status
   verbs:
   - get

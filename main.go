@@ -32,7 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	egressv1 "github.com/Azure/azure-firewall-egress-controller/pkg/api/v1"
+	azurefirewallrulesv1 "github.com/Azure/azure-firewall-egress-controller/pkg/api/v1"
 	azure "github.com/Azure/azure-firewall-egress-controller/pkg/azure"
 	"github.com/Azure/azure-firewall-egress-controller/pkg/controllers"
 	environment "github.com/Azure/azure-firewall-egress-controller/pkg/environment"
@@ -49,7 +49,7 @@ var (
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
-	utilruntime.Must(egressv1.AddToScheme(scheme))
+	utilruntime.Must(azurefirewallrulesv1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -106,16 +106,16 @@ func main() {
 
 	klog.Infof("Azure Firewall Policy Details: Subscription=\"%s\" Resource Group=\"%s\" Location=\"%s\" Name=\"%s\" Rule Collection Group=\"%s\" Rule Collection Group Priority=\"%d\"", env.SubscriptionID, env.ResourceGroupName, firewallPolicyLoc, env.FwPolicyName, env.FwPolicyRuleCollectionGroupName, env.FwPolicyRuleCollectionGroupPriority)
 
-	if err = (&controllers.EgressrulesReconciler{
+	if err = (&controllers.AzureFirewallRulesReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
 		AzClient: azClient,
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Egressrules")
+		setupLog.Error(err, "unable to create controller", "controller", "AzureFirewallRules")
 		os.Exit(1)
 	}
-	if err = (&egressv1.Egressrules{}).SetupWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "Egressrules")
+	if err = (&azurefirewallrulesv1.AzureFirewallRules{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "AzureFirewallRules")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder

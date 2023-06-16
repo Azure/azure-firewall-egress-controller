@@ -1,5 +1,5 @@
 apiVersion: egress.azure-firewall-egress-controller.io/v1
-kind: Egressrules
+kind: AzureFirewallRules
 metadata:
   name: egressrules-sample2
 spec:
