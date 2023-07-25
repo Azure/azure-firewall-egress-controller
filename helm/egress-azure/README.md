@@ -5,11 +5,12 @@
 ```console
 helm install [RELEASE_NAME] oci://mcr.microsoft.com/azfw/helmchart/afec --version 0.1.0 \
          --debug \
-         --set fw.fwResourceGroup=<resourceGroup> \
-         --set fw.subscriptionId=<subscriptionId> \
-         --set fw.policyName=<azureFirewallPolicy> \
-         --set fw.policyRuleCollectionGroup=<azureFirewallRuleCollectiongroup> \
-         --set fw.policyRuleCollectionGroupPriority=<azureFirewallRuleCollectiongroupPriority> \
+         --set fw.policyResourceID=<fwPolicyResourceID> \
+         --set fw.policyResourceGroup=<fwPolicyResourceGroup> \
+         --set fw.policySubscriptionId=<fwPolicySubscriptionId> \
+         --set fw.policyName=<fwPolicyName> \
+         --set fw.policyRuleCollectionGroup=<fwPolicyRuleCollectionGroup> \
+         --set fw.policyRuleCollectionGroupPriority=<fwPolicyRuleCollectionGroupPriority> \
          --set auth.tenantId=<azureTenantId> \
          --set auth.clientId=<azureClientId> \
          --set auth.clientSecret=<azureClientSecret>
@@ -20,14 +21,19 @@ helm install [RELEASE_NAME] oci://mcr.microsoft.com/azfw/helmchart/afec --versio
 ```console
 helm upgrade [RELEASE_NAME] oci://mcr.microsoft.com/azfw/helmchart/afec --version [LATEST_VERSION] \
          --debug \
-         --set fw.fwResourceGroup=<resourceGroup> \
-         --set fw.subscriptionId=<subscriptionId> \
-         --set fw.policyName=<azureFirewallPolicy> \
-         --set fw.policyRuleCollectionGroup=<azureFirewallRuleCollectiongroup> \
-         --set fw.policyRuleCollectionGroupPriority=<azureFirewallRuleCollectiongroupPriority> \
+         --set fw.policyResourceID=<fwPolicyResourceID> \
+         --set fw.policyResourceGroup=<fwPolicyResourceGroup> \
+         --set fw.policySubscriptionId=<fwPolicySubscriptionId> \
+         --set fw.policyName=<fwPolicyName> \
+         --set fw.policyRuleCollectionGroup=<fwPolicyRuleCollectionGroup> \
+         --set fw.policyRuleCollectionGroupPriority=<fwPolicyRuleCollectionGroupPriority> \
          --set auth.tenantId=<azureTenantId> \
          --set auth.clientId=<azureClientId> \
          --set auth.clientSecret=<azureClientSecret>
 ```
 
 4. Check the log of the newly created pod to verify if it started properly.
+
+```console
+kubectl logs <pod_name> -c manager -n aks-egress-system
+```
