@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>Azure Firewall Controller Deployment Workflow - Azure Firewall Egress Controller</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+        <link href="../../css/extra.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Azure Firewall Controller Deployment Workflow";
+        var mkdocs_page_input_path = "developers/build.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <script src="../../js/jquery-3.6.0.min.js" defer></script>
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/languages/yaml.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/languages/rust.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/languages/bash.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/languages/go.min.js"></script>
+      <script>hljs.initHighlightingOnLoad();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> Azure Firewall Egress Controller
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../..">Introduction</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Developers</span></p>
+              <ul class="current">
+                  <li class="toctree-l1 current"><a class="reference internal current" href="./">Azure Firewall Controller Deployment Workflow</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#outline">Outline:</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#prerequisites">Prerequisites</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#setup-kubernetes-credentials">Setup Kubernetes Credentials</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#deploying-cert-manager">Deploying cert-manager</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#azure-resource-manager-authentication">Azure Resource Manager Authentication</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#using-a-service-principal">Using a Service Principal</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#install-azure-firewall-controller-as-a-helm-chart">Install Azure Firewall Controller as a Helm Chart</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#parameters">Parameters</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../contribute/">Contribution Guidelines</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../crds/">Crds</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../developer-guideline/">Developer guideline</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">Azure Firewall Egress Controller</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a> &raquo;</li>
+          <li>Developers &raquo;</li>
+      <li>Azure Firewall Controller Deployment Workflow</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/Azure/azure-firewall-egress-controller/edit/master/docs/developers/build.md">Edit on Azure/azure-firewall-egress-controller</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="azure-firewall-controller-deployment-workflow">Azure Firewall Controller Deployment Workflow</h1>
+<p>The Azure Firewall Controller is a pod within your Kubernetes cluster which monitors a subset of Kubernetes Resources and translates them to Azure Firewall specific configuration and applies to the  <a href="https://docs.microsoft.com/en-us/azure/azure-resource-manager/resource-group-overview">Azure Resource Manager (ARM)</a>.</p>
+<h3 id="outline">Outline:</h3>
+<ul>
+<li><a href="#prerequisites">Prerequisites</a></li>
+<li><a href="#azure-resource-manager-authentication">Azure Resource Manager Authentication (ARM)</a><ul>
+<li>Option 1: <a href="#using-a-service-principal">Using a Service Principal</a></li>
+</ul>
+</li>
+<li><a href="#install-azure-firewall-controller-as-a-helm-chart">Install Azure Firewall Controller using Helm</a></li>
+</ul>
+<h2 id="prerequisites">Prerequisites</h2>
+<p>This documents assumes you already have the following tools and infrastructure installed:<br />
+- Azure Firewall as the next hop to the AKS cluster. Please follow <a href="https://learn.microsoft.com/en-us/azure/aks/limit-egress-traffic">this</a> documentation for the setup. Make sure to add additional rules in the firewall to allow node &lt;-&gt; api-server communication and also to allow access to images in the Microsoft Container Registry(MCR).<br />
+- Create an Active Directory Service Principal.<br />
+- If you are using <a href="https://shell.azure.com/">Azure Cloud Shell</a> it has all the tools already installed. Launch your shell from shell.azure.com or by clicking the link: <a href="https://shell.azure.com">Launch Azure Cloud Shell</a>. If you choose to use another environment, please ensure the following command line tools are installed:<br />
+  1. <code>az</code> - Azure CLI: <a href="https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest">installation instructions</a><br />
+  2. <code>kubectl</code> - Kubernetes command-line tool: <a href="https://kubernetes.io/docs/tasks/tools/install-kubectl">installation instructions</a><br />
+  3. <code>helm</code> (version 3.7 or later) - Kubernetes package manager: <a href="https://github.com/helm/helm/releases/latest">installation instructions</a>  </p>
+<h3 id="setup-kubernetes-credentials">Setup Kubernetes Credentials</h3>
+<p>For the following steps we need setup <a href="https://kubectl.docs.kubernetes.io/">kubectl</a> command,
+which we will use to connect to our new Kubernetes cluster. We will use <code>az</code> CLI to obtain credentials for Kubernetes.  </p>
+<p>Get credentials for your newly deployed AKS (<a href="https://docs.microsoft.com/en-us/azure/aks/kubernetes-walkthrough#connect-to-the-cluster">read more</a>):</p>
+<div class="highlight"><pre><span></span><code>az<span class="w"> </span>aks<span class="w"> </span>get-credentials<span class="w"> </span>--resource-group<span class="w"> </span>aksClusterResourceGroupName<span class="w"> </span>--name<span class="w"> </span>aksClusterName
+</code></pre></div>
+<h3 id="deploying-cert-manager">Deploying cert-manager</h3>
+<p>Validation Webhooks are implemented for the CRD. In order for the API server to communicate with the webhook component, the webhook requires a TLS certificate that the apiserver is configured to trust. We are using <a href="https://github.com/cert-manager/cert-manager">cert-manager</a> for provisioning the certificates for the webhook.</p>
+<p>cert-manager Installation (<a href="https://cert-manager.io/docs/installation/">read more</a>):</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>https://github.com/cert-manager/cert-manager/releases/download/v1.11.0/cert-manager.yaml
+</code></pre></div>
+<h2 id="azure-resource-manager-authentication">Azure Resource Manager Authentication</h2>
+<p>AFEC communicates with the Kubernetes API server and the Azure Resource Manager. It requires an identity to access
+these APIs.</p>
+<h3 id="using-a-service-principal">Using a Service Principal</h3>
+<p>AFEC access to ARM can be possible by creating service principal. Follow the steps below to create an Azure Active Directory (AAD) service principal object.</p>
+<ol>
+<li>Create an Active Directory Service Principal and make sure the created service principal has contributor access to the Azure Firewall.</li>
+</ol>
+<div class="highlight"><pre><span></span><code>az<span class="w"> </span>ad<span class="w"> </span>sp<span class="w"> </span>create-for-rbac<span class="w"> </span>--role<span class="w"> </span>Contributor<span class="w"> </span>--scopes<span class="w"> </span>/subscriptions/policySubscriptionId
+</code></pre></div>
+<p>Please record the appId (<code>&lt;azureClientId&gt;</code>), password(<code>&lt;azureClientSecret&gt;</code>), and tenant(<code>&lt;azureTenantId&gt;</code>) values - these will be used in the following steps to authenticate to azure.</p>
+<h2 id="install-azure-firewall-controller-as-a-helm-chart">Install Azure Firewall Controller as a Helm Chart</h2>
+<p><a href="https://docs.microsoft.com/en-us/azure/aks/kubernetes-helm">Helm</a> is a package manager for
+Kubernetes. This document uses Helm version 3.7 or later. We will leverage it to install the <code>azure-firewall-egress-controller</code> package.
+Use <a href="https://shell.azure.com/">Cloud Shell</a> to install install the AFEC Helm package:</p>
+<ol>
+<li>Install Helm chart</li>
+</ol>
+<p><div class="highlight"><pre><span></span><code><span class="go">helm install [RELEASE_NAME] oci://mcr.microsoft.com/azfw/helmchart/afec --version 0.1.0 \</span>
+<span class="go">         --debug \</span>
+<span class="go">         --set fw.policyResourceID=&lt;fwPolicyResourceID&gt; \</span>
+<span class="go">         --set fw.policyResourceGroup=&lt;fwPolicyResourceGroup&gt; \</span>
+<span class="go">         --set fw.policySubscriptionId=&lt;fwPolicySubscriptionId&gt; \</span>
+<span class="go">         --set fw.policyName=&lt;fwPolicyName&gt; \</span>
+<span class="go">         --set fw.policyRuleCollectionGroup=&lt;fwPolicyRuleCollectionGroup&gt; \</span>
+<span class="go">         --set fw.policyRuleCollectionGroupPriority=&lt;fwPolicyRuleCollectionGroupPriority&gt; \</span>
+<span class="go">         --set auth.tenantId=&lt;azureTenantId&gt; \</span>
+<span class="go">         --set auth.clientId=&lt;azureClientId&gt; \</span>
+<span class="go">         --set auth.clientSecret=&lt;azureClientSecret&gt;</span>
+</code></pre></div>
+<code>[RELEASE_NAME]</code> can be any chosen name.<br>
+<code>&lt;azureTenantId&gt;</code> and <code>&lt;azureClientId&gt;</code> and <code>&lt;azureClientSecret&gt;</code> are values that were created in the previous section.
+If a Firewall Policy Resource Id is provided, individual fields of fwpolicySubscriptionId, fwpolicyResourceGroup and fwPolicyName will be ignored</p>
+<h4 id="parameters">Parameters</h4>
+<ul>
+<li><code>&lt;fwpolicyResourceId&gt;</code> : ID of the Firewall Policy.</li>
+<li><code>&lt;fwpolicyResourceGroup&gt;</code> : Name of the Azure Resource group in which Azure Firewall Policy was created.</li>
+<li><code>&lt;fwpolicySubscriptionId&gt;</code> : The Azure Subscription ID in which Azure Firewall Policy resides. Example: <code>a123b234-a3b4-557d-b2df-a0bc12de1234</code></li>
+<li><code>&lt;fwPolicyName&gt;</code> : Name of the Azure Firewall Policy that is attached to the firewall.</li>
+<li><code>&lt;fwPolicyRuleCollectionGroup&gt;</code> : The Rule Collection Group in the Firewall Policy dedicated to the Egress Controller.</li>
+<li><code>&lt;fwPolicyRuleCollectionGroupPriority&gt;</code> : The Priority of the Rule Collection Group in the Firewall Policy dedicated to the Egress Controller.</li>
+<li><code>&lt;azureTenantId&gt;</code> : The tenant ID of the Identity.</li>
+<li><code>&lt;azureClientId&gt;</code> : The client ID of the Identity.</li>
+<li>
+<p><code>&lt;azureClientSecret&gt;</code> : The client Secret of the Identity.</p>
+</li>
+<li>
+<p>To upgrade the chart</p>
+</li>
+</ul>
+<p><div class="highlight"><pre><span></span><code><span class="go">helm upgrade [RELEASE_NAME] oci://mcr.microsoft.com/azfw/helmchart/afec --version [LATEST_VERSION] \</span>
+<span class="go">         --debug \</span>
+<span class="go">         --set fw.policyResourceID=&lt;fwPolicyResourceID&gt; \</span>
+<span class="go">         --set fw.policyResourceGroup=&lt;fwPolicyResourceGroup&gt; \</span>
+<span class="go">         --set fw.policySubscriptionId=&lt;fwPolicySubscriptionId&gt; \</span>
+<span class="go">         --set fw.policyName=&lt;fwPolicyName&gt; \</span>
+<span class="go">         --set fw.policyRuleCollectionGroup=&lt;fwPolicyRuleCollectionGroup&gt; \</span>
+<span class="go">         --set fw.policyRuleCollectionGroupPriority=&lt;fwPolicyRuleCollectionGroupPriority&gt; \</span>
+<span class="go">         --set auth.tenantId=&lt;azureTenantId&gt; \</span>
+<span class="go">         --set auth.clientId=&lt;azureClientId&gt; \</span>
+<span class="go">         --set auth.clientSecret=&lt;azureClientSecret&gt;</span>
+</code></pre></div>
+<code>[LATEST_VERSION]</code> is the specific version to which you intend to upgrade your Helm release.<br></p>
+<ol>
+<li>
+<p>Verify the afc controller pods are ready.
+<div class="highlight"><pre><span></span><code><span class="go">kubectl get pods -n aks-egress-system</span>
+</code></pre></div></p>
+</li>
+<li>
+<p>Check the log of the newly created pod to verify if it started properly.
+<div class="highlight"><pre><span></span><code><span class="go">kubectl logs &lt;pod_name&gt; -c manager -n aks-egress-system</span>
+</code></pre></div></p>
+</li>
+</ol>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../.." class="btn btn-neutral float-left" title="Introduction"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../contribute/" class="btn btn-neutral float-right" title="Contribution Guidelines">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../.." style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../contribute/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script>var base_url = '../..';</script>
+    <script src="../../js/theme_extra.js" defer></script>
+    <script src="../../js/theme.js" defer></script>
+      <script src="../../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>Crds - Azure Firewall Egress Controller</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+        <link href="../../css/extra.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Crds";
+        var mkdocs_page_input_path = "developers/crds.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <script src="../../js/jquery-3.6.0.min.js" defer></script>
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/languages/yaml.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/languages/rust.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/languages/bash.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/languages/go.min.js"></script>
+      <script>hljs.initHighlightingOnLoad();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> Azure Firewall Egress Controller
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../..">Introduction</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Developers</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../build/">Azure Firewall Controller Deployment Workflow</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../contribute/">Contribution Guidelines</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="./">Crds</a>
+    <ul class="current">
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../developer-guideline/">Developer guideline</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">Azure Firewall Egress Controller</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a> &raquo;</li>
+          <li>Developers &raquo;</li>
+      <li>Crds</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/Azure/azure-firewall-egress-controller/edit/master/docs/developers/crds.md">Edit on Azure/azure-firewall-egress-controller</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h3 id="custom-resource-definition-crd">Custom Resource Definition (CRD)</h3>
+<p>A resource is an endpoint in the Kubernetes API that stores a collection of API objects a certain kind; for example, the built-in pods resource contains a collection of Pod objects. A custom resource is an extension of the Kubernetes API that is not necessarily available in a default Kubernetes installation. It represents a customization of a particular Kubernetes installation. </p>
+<h3 id="the-azurefirewallrules-resource">The AzureFirewallRules Resource:</h3>
+<p>The AzureFirewallRules format which is a cluster-scoped CustomResourceDefinition allows us define configuration for the egress traffic and deploy it to the cluster. </p>
+<h4 id="the-raw-specification-of-the-resource-in-go-looks-like-this">The raw specification of the resource in Go looks like this:</h4>
+<div class="highlight"><pre><span></span><code>//<span class="w"> </span>AzureFirewallRules<span class="w"> </span>is<span class="w"> </span>the<span class="w"> </span>Schema<span class="w"> </span><span class="k">for</span><span class="w"> </span>the<span class="w"> </span>azureFirewallRules<span class="w"> </span>API
+<span class="nb">type</span><span class="w"> </span>AzureFirewallRules<span class="w"> </span>struct<span class="w"> </span><span class="o">{</span>
+<span class="w">    </span>metav1.TypeMeta<span class="w">   </span><span class="sb">`</span>json:<span class="s2">&quot;,inline&quot;</span><span class="sb">`</span>
+<span class="w">    </span>metav1.ObjectMeta<span class="w"> </span><span class="sb">`</span>json:<span class="s2">&quot;metadata,omitempty&quot;</span><span class="sb">`</span>
+
+<span class="w">  </span>//<span class="w"> </span>AzureFirewallRulesSpec<span class="w"> </span>defines<span class="w"> </span>the<span class="w"> </span>desired<span class="w"> </span>state<span class="w"> </span>of<span class="w"> </span>azureFirewallRules
+<span class="w">    </span>Spec<span class="w">   </span>AzureFirewallRulesSpec<span class="w">   </span><span class="sb">`</span>json:<span class="s2">&quot;spec,omitempty&quot;</span><span class="sb">`</span>
+<span class="w">  </span>//<span class="w"> </span>AzureFirewallRulesStatus<span class="w"> </span>defines<span class="w"> </span>the<span class="w"> </span>observed<span class="w"> </span>state<span class="w"> </span>of<span class="w"> </span>azureFirewallRules
+<span class="w">    </span>Status<span class="w"> </span>AzureFirewallRulesStatus<span class="w"> </span><span class="sb">`</span>json:<span class="s2">&quot;status,omitempty&quot;</span><span class="sb">`</span>
+<span class="o">}</span>
+</code></pre></div>
+<h4 id="an-example-azurefirewallrules-might-look-like-this">An example AzureFirewallRules might look like this:</h4>
+<p><div class="highlight"><pre><span></span><code>apiVersion:<span class="w"> </span>egress.azure-firewall-egress-controller.io/v1<span class="w"> </span>
+kind:<span class="w"> </span>AzureFirewallRules<span class="w"> </span>
+metadata:<span class="w"> </span>
+<span class="w">  </span>name:<span class="w"> </span>egressrules-sample1<span class="w"> </span>
+spec:<span class="w"> </span>
+<span class="w">  </span>egressRules:<span class="w"> </span>
+<span class="w">    </span>-<span class="w"> </span>name:<span class="w"> </span><span class="s2">&quot;test-egress-rule-1&quot;</span><span class="w"> </span>
+<span class="w">      </span>nodeSelector:<span class="w"> </span>
+<span class="w">        </span>-<span class="w"> </span>app:<span class="w"> </span><span class="s2">&quot;nginx0&quot;</span><span class="w"> </span>
+<span class="w">      </span>rules:<span class="w"> </span>
+<span class="w">        </span>-<span class="w"> </span>ruleName:<span class="w"> </span><span class="s2">&quot;rule1&quot;</span><span class="w"> </span>
+<span class="w">          </span>ruleCollectionName:<span class="w"> </span><span class="s2">&quot;aks-fw-ng-network&quot;</span><span class="w"> </span>
+<span class="w">          </span>priority:<span class="w"> </span><span class="m">110</span><span class="w"> </span>
+<span class="w">          </span>destinationFqdns:<span class="w"> </span><span class="o">[</span><span class="s2">&quot;*&quot;</span><span class="o">]</span><span class="w"> </span>
+<span class="w">          </span>destinationPorts:<span class="w"> </span><span class="o">[</span><span class="s2">&quot;*&quot;</span><span class="o">]</span><span class="w"> </span>
+<span class="w">          </span>protocol<span class="w"> </span>:<span class="w"> </span><span class="o">[</span><span class="s2">&quot;TCP&quot;</span>,<span class="s2">&quot;UDP&quot;</span><span class="o">]</span><span class="w"> </span>
+<span class="w">          </span>action<span class="w"> </span>:<span class="w"> </span><span class="s2">&quot;Allow&quot;</span><span class="w"> </span>
+<span class="w">          </span>ruleType:<span class="w"> </span><span class="s2">&quot;Network&quot;</span><span class="w"> </span>
+<span class="w">        </span>-<span class="w"> </span>ruleName:<span class="w"> </span><span class="s2">&quot;rule2&quot;</span><span class="w"> </span>
+<span class="w">          </span>ruleCollectionName:<span class="w"> </span><span class="s2">&quot;aks-fw-ng&quot;</span><span class="w"> </span>
+<span class="w">          </span>priority:<span class="w"> </span><span class="m">200</span><span class="w"> </span>
+<span class="w">          </span>targetFqdns:<span class="w"> </span><span class="o">[</span><span class="s2">&quot;*.yahoo.com&quot;</span><span class="o">]</span><span class="w"> </span>
+<span class="w">          </span>protocol<span class="w"> </span>:<span class="w"> </span><span class="o">[</span><span class="s2">&quot;HTTP:80&quot;</span><span class="o">]</span><span class="w"> </span>
+<span class="w">          </span>action<span class="w"> </span>:<span class="w"> </span><span class="s2">&quot;Deny&quot;</span><span class="w"> </span>
+<span class="w">          </span>ruleType:<span class="w"> </span><span class="s2">&quot;Application&quot;</span>
+<span class="w">    </span>-<span class="w"> </span>name:<span class="w"> </span><span class="s2">&quot;test-egress-rule-2&quot;</span><span class="w"> </span>
+<span class="w">      </span>nodeSelector:<span class="w"> </span>
+<span class="w">        </span>-<span class="w"> </span>nodepool1:<span class="w"> </span><span class="s2">&quot;set1&quot;</span>
+<span class="w">        </span>-<span class="w"> </span>nodepool2:<span class="w"> </span><span class="s2">&quot;set1&quot;</span>
+<span class="w">      </span>rules:<span class="w"> </span>
+<span class="w">        </span>-<span class="w"> </span>ruleName:<span class="w"> </span><span class="s2">&quot;rule3&quot;</span><span class="w"> </span>
+<span class="w">          </span>ruleCollectionName:<span class="w"> </span><span class="s2">&quot;aks-fw-ng&quot;</span><span class="w"> </span>
+<span class="w">          </span>priority:<span class="w"> </span><span class="m">200</span><span class="w"> </span>
+<span class="w">          </span>targetFqdns:<span class="w"> </span><span class="o">[</span><span class="s2">&quot;*.yahoo.com&quot;</span><span class="o">]</span><span class="w"> </span>
+<span class="w">          </span>protocol<span class="w"> </span>:<span class="w"> </span><span class="o">[</span><span class="s2">&quot;HTTP:80&quot;</span><span class="o">]</span><span class="w"> </span>
+<span class="w">          </span>action<span class="w"> </span>:<span class="w"> </span><span class="s2">&quot;Deny&quot;</span><span class="w"> </span>
+<span class="w">          </span>ruleType:<span class="w"> </span><span class="s2">&quot;Application&quot;</span><span class="w"> </span>
+</code></pre></div>
+<strong>Mandatory Fields</strong>: As with all other Kubernetes config, a AzureFirewallRules needs <code>apiVersion</code>, <code>Kind</code>, and <code>metadata</code> fields. <code>metadata</code> field includes the name of the policy and the set of labels to identify the resources in Kubernetes.<br></p>
+<p><strong>spec</strong>: Egressrules spec has all the information needed to define rules on Azure Firewall.</p>
+<p><strong>egressRules</strong>: egressRules field allows us to define list of egress rules on the nodes using the labels asigned to them. This field will allow us to have multiple rules on different node selectors. The example shown above defines two egressRules <code>test-egress-rule-1</code> and <code>test-egress-rule-2</code>. And the rules defined in <code>test-egress-rule-1</code> will be applied to nodes that match label "app=nginx0" and the rules in <code>`test-egress-rule-2</code> will be applied to nodes with label "nodepool1=set1" and "nodepool2=set1".</p>
+<p><strong>nodeSelector</strong>: nodeSelector is a list of node labels to which the rules should apply. In the above example, we defined the nodeSelector with the label "app=nginx0" All the nodes that are grouped using this nodeSelector label will adhere to those rules.</p>
+<p><strong>rules</strong>: rules field allows us define list of azure firewall rules that the nodes grouped using this nodeSelector label should follow.
+- <code>ruleName</code>, <code>ruleCollectionName</code>, <code>priority</code>, <code>protocol</code>, <code>action</code>, <code>ruleType</code> are the mandatory fields in rules section.
+- Two rule types are supported in the AzureFirewallRules - <code>Application</code> and <code>Network</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ruleName</td>
+<td align="left">Name of the rule</td>
+</tr>
+<tr>
+<td>ruleCollectionName</td>
+<td align="left">Rule Collection to which the rule should belong.</td>
+</tr>
+<tr>
+<td>priority</td>
+<td align="left">The priority value of the rule collection, determines order the rule collections are processed.</td>
+</tr>
+<tr>
+<td>action</td>
+<td align="left">Rule Collection action. Applies to all the rules in the rule collection.<br>Supported Values: "Allow" or "Deny"</td>
+</tr>
+<tr>
+<td>ruleType</td>
+<td align="left">Supported rule types: "Application" or "Network"</td>
+</tr>
+<tr>
+<td>protocol</td>
+<td align="left">Defines the protocol that should be used to filter the traffic.<br>Examples: <br>Application rule: ["https:80","http:443"]<br>Network rule: ["TCP"], ["TCP","UDP"], ["ICMP"], ["ANY"]</td>
+</tr>
+<tr>
+<td>targetFqdns<br>targetUrls</td>
+<td align="left">Supported destination types for a Application rule.  Specifies the list of destination fqdns or urls that should be used to filter the traffic.</td>
+</tr>
+<tr>
+<td>destinationAddresses<br>destinationFqdns</td>
+<td align="left">Supported destination types for a Network rule. Specifies the list of destination addresses or fqdns that should be used to filter the trafficrule.</td>
+</tr>
+<tr>
+<td>destinationPorts</td>
+<td align="left">List of destination ports that should be used to filter the traffic in a network rule.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Examples of Application Rule Type:</strong> <br></p>
+<ol>
+<li>The following example allows the egress traffic from nodes with label "app=service" to *.google.com.
+<div class="highlight"><pre><span></span><code>apiVersion:<span class="w"> </span>egress.azure-firewall-egress-controller.io/v1<span class="w"> </span>
+kind:<span class="w"> </span>AzureFirewallRules<span class="w"> </span>
+metadata:<span class="w"> </span>
+<span class="w">  </span>name:<span class="w"> </span>egressrules-sample1<span class="w"> </span>
+spec:<span class="w"> </span>
+<span class="w">  </span>egressRules:<span class="w"> </span>
+<span class="w">    </span>-<span class="w"> </span>name:<span class="w"> </span><span class="s2">&quot;Allow-google&quot;</span><span class="w"> </span>
+<span class="w">      </span>nodeSelector:<span class="w"> </span>
+<span class="w">        </span>-<span class="w"> </span>app:<span class="w"> </span><span class="s2">&quot;service&quot;</span>
+<span class="w">      </span>rules:<span class="w"> </span>
+<span class="w">        </span>-<span class="w"> </span>ruleName:<span class="w"> </span><span class="s2">&quot;rule1&quot;</span><span class="w"> </span>
+<span class="w">          </span>ruleCollectionName:<span class="w"> </span><span class="s2">&quot;aks-fw-ng-allow&quot;</span><span class="w"> </span>
+<span class="w">          </span>priority:<span class="w"> </span><span class="m">210</span><span class="w"> </span>
+<span class="w">          </span>targetFqdns:<span class="w"> </span><span class="o">[</span><span class="s2">&quot;*.google.com&quot;</span><span class="o">]</span><span class="w"> </span>
+<span class="w">          </span>protocol<span class="w"> </span>:<span class="w"> </span><span class="o">[</span><span class="s2">&quot;HTTP:80&quot;</span><span class="o">]</span><span class="w"> </span>
+<span class="w">          </span>action<span class="w"> </span>:<span class="w"> </span><span class="s2">&quot;Allow&quot;</span><span class="w"> </span>
+<span class="w">          </span>ruleType:<span class="w"> </span><span class="s2">&quot;Application&quot;</span><span class="w"> </span>
+</code></pre></div></li>
+</ol>
+<p><strong>Examples of Network Rule Type:</strong><br>
+1. The following example allows egress traffic from nodes with label "role=db" to destination addresses "10.0.0.1" and "10.0.0.2" on any port using TCP.</p>
+<div class="highlight"><pre><span></span><code>apiVersion:<span class="w"> </span>egress.azure-firewall-egress-controller.io/v1<span class="w"> </span>
+kind:<span class="w"> </span>AzureFirewallRules<span class="w"> </span>
+metadata:<span class="w"> </span>
+<span class="w">  </span>name:<span class="w"> </span>egressrules-sample1<span class="w"> </span>
+spec:<span class="w"> </span>
+<span class="w">  </span>egressRules:<span class="w"> </span>
+<span class="w">    </span>-<span class="w"> </span>name:<span class="w"> </span><span class="s2">&quot;Allow-addresses&quot;</span><span class="w"> </span>
+<span class="w">      </span>nodeSelector:<span class="w"> </span>
+<span class="w">        </span>-<span class="w"> </span>role:<span class="w"> </span><span class="s2">&quot;db&quot;</span>
+<span class="w">      </span>rules:<span class="w"> </span>
+<span class="w">        </span>-<span class="w"> </span>ruleName:<span class="w"> </span><span class="s2">&quot;rule1&quot;</span><span class="w"> </span>
+<span class="w">          </span>ruleCollectionName:<span class="w"> </span><span class="s2">&quot;aks-fw-ng-network&quot;</span><span class="w"> </span>
+<span class="w">          </span>priority:<span class="w"> </span><span class="m">110</span><span class="w"> </span>
+<span class="w">          </span>destinationAddresses:<span class="w"> </span><span class="o">[</span><span class="s2">&quot;10.0.0.1&quot;</span>,<span class="w"> </span><span class="s2">&quot;10.0.0.2&quot;</span><span class="o">]</span><span class="w"> </span>
+<span class="w">          </span>destinationPorts:<span class="w"> </span><span class="o">[</span><span class="s2">&quot;*&quot;</span><span class="o">]</span><span class="w"> </span>
+<span class="w">          </span>protocol<span class="w"> </span>:<span class="w"> </span><span class="o">[</span><span class="s2">&quot;TCP&quot;</span><span class="o">]</span><span class="w"> </span>
+<span class="w">          </span>action<span class="w"> </span>:<span class="w"> </span><span class="s2">&quot;Allow&quot;</span><span class="w"> </span>
+<span class="w">          </span>ruleType:<span class="w"> </span><span class="s2">&quot;Network&quot;</span><span class="w"> </span>
+</code></pre></div>
+<ol>
+<li>We can have rules to allow/deny traffic to any destination.</li>
+</ol>
+<div class="highlight"><pre><span></span><code>apiVersion:<span class="w"> </span>egress.azure-firewall-egress-controller.io/v1<span class="w"> </span>
+kind:<span class="w"> </span>AzureFirewallRules<span class="w"> </span>
+metadata:<span class="w"> </span>
+<span class="w">  </span>name:<span class="w"> </span>egressrules-sample1<span class="w"> </span>
+spec:<span class="w"> </span>
+<span class="w">  </span>egressRules:<span class="w"> </span>
+<span class="w">    </span>-<span class="w"> </span>name:<span class="w"> </span><span class="s2">&quot;Allow-web&quot;</span><span class="w"> </span>
+<span class="w">      </span>nodeSelector:<span class="w"> </span>
+<span class="w">        </span>-<span class="w"> </span>app:<span class="w"> </span><span class="s2">&quot;service&quot;</span>
+<span class="w">      </span>rules:<span class="w"> </span>
+<span class="w">        </span>-<span class="w"> </span>ruleName:<span class="w"> </span><span class="s2">&quot;rule1&quot;</span><span class="w"> </span>
+<span class="w">          </span>ruleCollectionName:<span class="w"> </span><span class="s2">&quot;aks-fw-ng-network&quot;</span><span class="w"> </span>
+<span class="w">          </span>priority:<span class="w"> </span><span class="m">110</span><span class="w"> </span>
+<span class="w">          </span>destinationAddresses:<span class="w"> </span><span class="o">[</span><span class="s2">&quot;*&quot;</span><span class="o">]</span><span class="w"> </span>
+<span class="w">          </span>destinationPorts:<span class="w"> </span><span class="o">[</span><span class="s2">&quot;80&quot;</span>,<span class="s2">&quot;443&quot;</span><span class="o">]</span><span class="w"> </span>
+<span class="w">          </span>protocol<span class="w"> </span>:<span class="w"> </span><span class="o">[</span><span class="s2">&quot;TCP&quot;</span><span class="o">]</span><span class="w"> </span>
+<span class="w">          </span>action<span class="w"> </span>:<span class="w"> </span><span class="s2">&quot;Allow&quot;</span><span class="w"> </span>
+<span class="w">          </span>ruleType:<span class="w"> </span><span class="s2">&quot;Network&quot;</span><span class="w"> </span>
+</code></pre></div>
+<ol>
+<li>We can have combination of network and application rules in just one resource.</li>
+</ol>
+<div class="highlight"><pre><span></span><code>apiVersion:<span class="w"> </span>egress.azure-firewall-egress-controller.io/v1<span class="w"> </span>
+kind:<span class="w"> </span>AzureFirewallRules<span class="w"> </span>
+metadata:<span class="w"> </span>
+<span class="w">  </span>name:<span class="w"> </span>egressrules-sample1<span class="w"> </span>
+spec:<span class="w"> </span>
+<span class="w">  </span>egressRules:<span class="w"> </span>
+<span class="w">    </span>-<span class="w"> </span>name:<span class="w"> </span><span class="s2">&quot;comb-network-application-rules&quot;</span><span class="w"> </span>
+<span class="w">      </span>nodeSelector:<span class="w"> </span>
+<span class="w">        </span>-<span class="w"> </span>app:<span class="w"> </span><span class="s2">&quot;nginx0&quot;</span><span class="w"> </span>
+<span class="w">      </span>rules:<span class="w"> </span>
+<span class="w">        </span>-<span class="w"> </span>ruleName:<span class="w"> </span><span class="s2">&quot;rule1&quot;</span><span class="w"> </span>
+<span class="w">          </span>ruleCollectionName:<span class="w"> </span><span class="s2">&quot;aks-fw-ng-network-deny&quot;</span><span class="w"> </span>
+<span class="w">          </span>priority:<span class="w"> </span><span class="m">100</span><span class="w"> </span>
+<span class="w">          </span>destinationFqdns:<span class="w"> </span><span class="o">[</span><span class="s2">&quot;*&quot;</span><span class="o">]</span><span class="w"> </span>
+<span class="w">          </span>destinationPorts:<span class="w"> </span><span class="o">[</span><span class="s2">&quot;*&quot;</span><span class="o">]</span><span class="w"> </span>
+<span class="w">          </span>protocol<span class="w"> </span>:<span class="w"> </span><span class="o">[</span><span class="s2">&quot;TCP&quot;</span>,<span class="s2">&quot;UDP&quot;</span><span class="o">]</span><span class="w"> </span>
+<span class="w">          </span>action<span class="w"> </span>:<span class="w"> </span><span class="s2">&quot;Deny&quot;</span><span class="w"> </span>
+<span class="w">          </span>ruleType:<span class="w"> </span><span class="s2">&quot;Network&quot;</span><span class="w"> </span>
+<span class="w">        </span>-<span class="w"> </span>ruleName:<span class="w"> </span><span class="s2">&quot;rule2&quot;</span><span class="w"> </span>
+<span class="w">          </span>ruleCollectionName:<span class="w"> </span><span class="s2">&quot;aks-fw-ng&quot;</span><span class="w"> </span>
+<span class="w">          </span>priority:<span class="w"> </span><span class="m">200</span><span class="w"> </span>
+<span class="w">          </span>targetFqdns:<span class="w"> </span><span class="o">[</span><span class="s2">&quot;*.yahoo.com&quot;</span><span class="o">]</span><span class="w"> </span>
+<span class="w">          </span>protocol<span class="w"> </span>:<span class="w"> </span><span class="o">[</span><span class="s2">&quot;HTTP:80&quot;</span><span class="o">]</span><span class="w"> </span>
+<span class="w">          </span>action<span class="w"> </span>:<span class="w"> </span><span class="s2">&quot;Deny&quot;</span><span class="w"> </span>
+<span class="w">          </span>ruleType:<span class="w"> </span><span class="s2">&quot;Application&quot;</span>
+</code></pre></div>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../contribute/" class="btn btn-neutral float-left" title="Contribution Guidelines"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../developer-guideline/" class="btn btn-neutral float-right" title="Developer guideline">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../contribute/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../developer-guideline/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script>var base_url = '../..';</script>
+    <script src="../../js/theme_extra.js" defer></script>
+    <script src="../../js/theme.js" defer></script>
+      <script src="../../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>
