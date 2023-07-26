@@ -48,7 +48,7 @@ AFEC access to ARM can be possible by creating service principal. Follow the ste
   1. Create an Active Directory Service Principal and make sure the created service principal has contributor access to the Azure Firewall.
 
   ```bash
-  az ad sp create-for-rbac --role Contributor --scopes /subscriptions/policysubscriptionId
+  az ad sp create-for-rbac --role Contributor --scopes /subscriptions/policySubscriptionId
   ```
 
   Please record the appId (`<azureClientId>`), password(`<azureClientSecret>`), and tenant(`<azureTenantId>`) values - these will be used in the following steps to authenticate to azure.
@@ -63,9 +63,9 @@ Use [Cloud Shell](https://shell.azure.com/) to install install the AFEC Helm pac
 ```console
 helm install [RELEASE_NAME] oci://mcr.microsoft.com/azfw/helmchart/afec --version 0.1.0 \
          --debug \
-         --set fw.policyResourceId=<fwpolicyResourceId> \
-         --set fw.policyResourceGroup=<fwpolicyResourceGroup> \
-         --set fw.policysubscriptionId=<fwpolicySubscriptionId> \
+         --set fw.policyResourceID=<fwPolicyResourceID> \
+         --set fw.policyResourceGroup=<fwPolicyResourceGroup> \
+         --set fw.policySubscriptionId=<fwPolicySubscriptionId> \
          --set fw.policyName=<fwPolicyName> \
          --set fw.policyRuleCollectionGroup=<fwPolicyRuleCollectionGroup> \
          --set fw.policyRuleCollectionGroupPriority=<fwPolicyRuleCollectionGroupPriority> \
@@ -94,9 +94,9 @@ If a Firewall Policy Resource Id is provided, individual fields of fwpolicySubsc
 ```console
 helm upgrade [RELEASE_NAME] oci://mcr.microsoft.com/azfw/helmchart/afec --version [LATEST_VERSION] \
          --debug \
-         --set fw.policyResourceId=<fwpolicyResourceId> \
-         --set fw.policyResourceGroup=<fwpolicyResourceGroup> \
-         --set fw.policysubscriptionId=<fwpolicySubscriptionId> \
+         --set fw.policyResourceID=<fwPolicyResourceID> \
+         --set fw.policyResourceGroup=<fwPolicyResourceGroup> \
+         --set fw.policySubscriptionId=<fwPolicySubscriptionId> \
          --set fw.policyName=<fwPolicyName> \
          --set fw.policyRuleCollectionGroup=<fwPolicyRuleCollectionGroup> \
          --set fw.policyRuleCollectionGroupPriority=<fwPolicyRuleCollectionGroupPriority> \
@@ -106,4 +106,12 @@ helm upgrade [RELEASE_NAME] oci://mcr.microsoft.com/azfw/helmchart/afec --versio
 ```
 `[LATEST_VERSION]` is the specific version to which you intend to upgrade your Helm release.<br>
 
-4. Check the log of the newly created pod to verify if it started properly.
+4. Verify the afc controller pods are ready.
+```console
+kubectl get pods -n aks-egress-system
+```
+
+5. Check the log of the newly created pod to verify if it started properly.
+```console
+kubectl logs <pod_name> -c manager -n aks-egress-system
+```
