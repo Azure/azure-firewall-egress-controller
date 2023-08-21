@@ -1,13 +1,12 @@
 apiVersion: egress.azure-firewall-egress-controller.io/v1
 kind: AzureFirewallRules
 metadata:
-  name: egressrules-sample2
+  name: sample-crd
 spec:
   egressRules:
     - name: "erule1"
       nodeSelector:
-        - app: "testing"
-        - app: "testing1"
+        - app: "service"
       rules:
         - ruleName: "rule1"
           ruleCollectionName: "aks-fw-ng"
@@ -31,7 +30,7 @@ spec:
         - ruleName: "rule3"
           ruleCollectionName: "aks-fw-ng-network"
           priority: 110
-          destinationFqdns: ["*"]
+          destinationAddresses: ["*"]
           destinationPorts: ["*"]
           protocol : ["TCP","UDP"]
           action : "Allow"
@@ -39,7 +38,7 @@ spec:
         - ruleName: "rule4"
           ruleCollectionName: "aks-fw-ng-network-deny"
           priority: 100
-          destinationFqdns: ["*"]
+          destinationFqdns: ["www.github.com"]
           destinationPorts: ["*"]
           protocol : ["TCP","UDP"]
           action : "Deny"
