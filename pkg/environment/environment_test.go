@@ -17,6 +17,7 @@ func TestGetEnv(t *testing.T) {
 	_ = os.Setenv(fwPolicyVarName, "fwPolicyVarName")
 	_ = os.Setenv(fwPolicyRuleCollectionGroupvarName, "fwPolicyRuleCollectionGroupvarName")
 	_ = os.Setenv(fwPolicyRuleCollectionGroupPriorityVarName, "400")
+	_ = os.Setenv(fwPolicyResourceID,"/subscriptions/SubscriptionIDVarName/resourceGroups/ResourceGroupNameVarName/providers/Microsoft.Network/firewallPolicies/fwPolicyVarName")
 
 	expected := EnvVariables{
 		ClientID:                            "ClientIDVarName",

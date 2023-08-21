@@ -33,6 +33,44 @@ func TestBuildFirewallConfig(t *testing.T) {
 									Action:             "Allow",
 									RuleType:           "Application",
 								},
+								{
+									RuleCollectionName: "aks-fw-ng-allow",
+									Priority:           210,
+									RuleName:           "rule2",
+									TargetUrls:        []string{"www.microsoft.com"},
+									Protocol:           []string{"HTTPs:443"},
+									Action:             "Allow",
+									RuleType:           "Application",
+								},
+								{
+									RuleCollectionName: "aks-fw-ng",
+									Priority:           200,
+									RuleName:           "rule3",
+									TargetFqdns:        []string{"*.yahoo.com"},
+									Protocol:           []string{"HTTP:443"},
+									Action:             "Deny",
+									RuleType:           "Application",
+								},
+								{
+									RuleCollectionName: "aks-fw-ng-network",
+									Priority:           110,
+									RuleName:           "rule4",
+									DestinationFqdns: 	[]string{"*"}, 
+									DestinationPorts: 	[]string{"*"},
+									Protocol : 			[]string{"TCP","UDP","ICMP","ANY"}, 
+									Action : 			"Allow",
+									RuleType: 			"Network",
+								},
+								{
+									RuleCollectionName: "aks-fw-ng-network",
+									Priority:           110,
+									RuleName:           "rule5",
+									DestinationAddresses: 	[]string{"*"}, 
+									DestinationPorts: 	[]string{"*"},
+									Protocol : 			[]string{"TCP","UDP","ICMP","ANY"}, 
+									Action : 			"Allow",
+									RuleType: 			"Network",
+								},
 							},
 						},
 					},
@@ -76,6 +114,104 @@ func TestBuildFirewallConfig(t *testing.T) {
 --                        ],
 --                        "targetUrls": [],
 --                        "terminateTLS": false
+--                    },
+--                    {
+--                        "destinationAddresses": [],
+--                        "name": "rule2",
+--                        "protocols": [
+--                            {
+--                                "port": 443,
+--                                "protocolType": "Https"
+--                            }
+--                        ],
+--                        "ruleType": "ApplicationRule",
+--                        "sourceIpGroups": [
+--                            "/subscriptions/7a06e974-7329-4485-87e7-3211b06c15aa/resourceGroups/afc-controller-setup-rg/providers/Microsoft.Network/ipGroups/IPGroup-node-appservice"
+--                        ],
+--                        "targetFqdns": [],
+--                        "targetUrls": [
+--                            "www.microsoft.com"
+--                        ],
+--                        "terminateTLS": true
+--                    }
+--                ]
+--            },
+--            {
+--                "action": {
+--                    "type": "Deny"
+--                },
+--                "name": "aks-fw-ng",
+--                "priority": 200,
+--                "ruleCollectionType": "FirewallPolicyFilterRuleCollection",
+--                "rules": [
+--                    {
+--                        "destinationAddresses": [],
+--                        "name": "rule3",
+--                        "protocols": [
+--                            {
+--                                "port": 443,
+--                                "protocolType": "Http"
+--                            }
+--                        ],
+--                        "ruleType": "ApplicationRule",
+--                        "sourceIpGroups": [
+--                            "/subscriptions/7a06e974-7329-4485-87e7-3211b06c15aa/resourceGroups/afc-controller-setup-rg/providers/Microsoft.Network/ipGroups/IPGroup-node-appservice"
+--                        ],
+--                        "targetFqdns": [
+--                            "*.yahoo.com"
+--                        ],
+--                        "targetUrls": [],
+--                        "terminateTLS": false
+--                    }
+--                ]
+--            },
+--            {
+--                "action": {
+--                    "type": "Allow"
+--                },
+--                "name": "aks-fw-ng-network",
+--                "priority": 110,
+--                "ruleCollectionType": "FirewallPolicyFilterRuleCollection",
+--                "rules": [
+--                    {
+--                        "destinationAddresses": [],
+--                        "destinationFqdns": [
+--                            "*"
+--                        ],
+--                        "destinationPorts": [
+--                            "*"
+--                        ],
+--                        "ipProtocols": [
+--                            "TCP",
+--                            "UDP",
+--                            "ICMP",
+--                            "Any"
+--                        ],
+--                        "name": "rule4",
+--                        "ruleType": "NetworkRule",
+--                        "sourceIpGroups": [
+--                            "/subscriptions/7a06e974-7329-4485-87e7-3211b06c15aa/resourceGroups/afc-controller-setup-rg/providers/Microsoft.Network/ipGroups/IPGroup-node-appservice"
+--                        ]
+--                    },
+--                    {
+--                        "destinationAddresses": [
+--                            "*"
+--                        ],
+--                        "destinationFqdns": [],
+--                        "destinationPorts": [
+--                            "*"
+--                        ],
+--                        "ipProtocols": [
+--                            "TCP",
+--                            "UDP",
+--                            "ICMP",
+--                            "Any"
+--                        ],
+--                        "name": "rule5",
+--                        "ruleType": "NetworkRule",
+--                        "sourceIpGroups": [
+--                            "/subscriptions/7a06e974-7329-4485-87e7-3211b06c15aa/resourceGroups/afc-controller-setup-rg/providers/Microsoft.Network/ipGroups/IPGroup-node-appservice"
+--                        ]
 --                    }
 --                ]
 --            }
